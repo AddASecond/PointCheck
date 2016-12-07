@@ -45,6 +45,10 @@ namespace PointCheck {
 		int tmpLocX;
 		int tmpLocY;
 		int OrderIndicate = 0;	// 用于初次加载listview1时提示是否有顺序错误
+		String^ DefaultColor = "蓝";	// 默认蓝，0,1,2,3,4对应黑，白，蓝，黄，绿色车牌
+		String^ DefaultType = "单层";	// 默认单层，0,1,2对应单层、双层和假（虚警）车牌
+		String^ ColorList = "黑,白,蓝,黄,绿";
+		String^ TypeList = "单层,双层,假(虚惊)";
 		System::String^ directory = "";// directory to save the tmpLogfile to prevent 
 		//CvMemStorage* storage = 0;
 
@@ -132,6 +136,86 @@ namespace PointCheck {
 			return 0;
 		}
 
+		// function5: Output modified items into D:\PointCheck+_Log\history.log
+		int OutHistory() {
+			// 若改动过且现在所有点都点满
+			if (ChangedOrNot[SelectedRow] == 1 && LocNum[SelectedRow] == 5) {
+				//找到最后一个ChangedOrNot的
+				int LCInd = 199999;	//LastChangedIndex
+				while (ChangedOrNot[LCInd] == 0 && LCInd > 0) {
+					LCInd--;
+				}
+
+				//刷新history.log
+				FileStream^ history = gcnew FileStream("D:\\PointCheck+_Log\\history.log", FileMode::Create, FileAccess::ReadWrite);
+				StreamWriter^ tmphistory = gcnew StreamWriter(history, System::Text::Encoding::Unicode);
+				ChangeCount = 0; // reset ChangeCount
+				for (int i = 0; i <= LCInd; i++) {
+					if (ChangedOrNot[i] == 1) {
+						ChangeCount += 1;
+						String^ OneLine = "";
+						OneLine += listView1->Items[i]->SubItems[0]->Text->ToString() + " " +     	//图片序号
+							listView1->Items[i]->SubItems[7]->Text->ToString() + " " + 				//原图片名称
+							listView1->Items[i]->SubItems[5]->Text->ToString() + " " +	            //图片新关键点位置
+							listView1->Items[i]->SubItems[8]->Text->ToString() + " " +              //图片颜色
+							listView1->Items[i]->SubItems[9]->Text->ToString();                     //图片类型
+						tmphistory->WriteLine(OneLine);
+
+						// change the current path in listview1
+						String^ OldPath_item = listView1->Items[i]->SubItems[6]->Text;
+						String^ NewPath_item = OldPath_item->Split('[')[0] + "[" + listView1->Items[i]->SubItems[5]->Text + "]" + OldPath_item->Split(']')[1];
+						listView1->Items[i]->SubItems[6]->Text = NewPath_item;
+
+						// refresh the PreflightCheck in listview and richTextBox5
+						array<int>^ TJPoint = gcnew array<int>(10);	//save the points into RAM
+						String^ StrPrePoints = listView1->Items[i]->SubItems[5]->Text;
+						for (int i = 0; i < 5; i++) {
+							TJPoint[2 * i] = int::Parse(StrPrePoints->Split('.')[i]->Split(',')[0]->Split('(')[1]);
+							TJPoint[2 * i + 1] = int::Parse(StrPrePoints->Split('.')[i]->Split(',')[1]->Split(')')[0]);
+						}
+						//Preflight check if 
+						//axis x:1>4>0	2>4>3 axis y: 3>4>0 2>4>1
+						if (TJPoint[2] > TJPoint[8] && TJPoint[8] > TJPoint[0] &&
+							TJPoint[4] > TJPoint[8] && TJPoint[8] > TJPoint[6] &&
+							TJPoint[7] > TJPoint[9] && TJPoint[9] > TJPoint[1] &&
+							TJPoint[5] > TJPoint[9] && TJPoint[9] > TJPoint[3]) {
+							listView1->Items[i]->SubItems[4]->Text = "对";
+							richTextBox5->Text = "对";
+						}
+						else {
+							listView1->Items[i]->SubItems[4]->Text = "错错错错错错";
+							richTextBox5->Text = "错";
+						}
+					}
+				}
+				tmphistory->Close();
+				history->Close();
+				richTextBox4->Text = ChangeCount.ToString();	//refresh the ChangeCount in rechTextBox4
+
+																// MessageBox mention richTextBox5 content
+				if (richTextBox5->Text == "错") {
+					MessageBox::Show("本张 标点顺序错误 或 中心点偏出了边框！");
+				}
+			}	// end of modified before save
+			return 0;
+		}
+
+		// function 6: Color,Type Convert to Index
+		int ColorTypeConvert(String^ ColorOrType) {
+			int NumOut = 0;
+			for (int i = 0; i < 5; i++) {
+				if (ColorList->Split(',')[i] == ColorOrType) {
+					NumOut = i;
+				}
+			}
+			for (int i = 0; i < 3; i++) {
+				if (TypeList->Split(',')[i] == ColorOrType) {
+					NumOut = i;
+				}
+			}
+			return NumOut;
+		}
+
 		// Variables and Functions Defined by chenqu 20161126 END
 
 
@@ -146,6 +230,24 @@ namespace PointCheck {
 				delete components;
 			}
 		}
+	private: System::Windows::Forms::Label^  label6;
+	private: System::Windows::Forms::RichTextBox^  richTextBox8;
+	private: System::Windows::Forms::Label^  label5;
+	private: System::Windows::Forms::RichTextBox^  richTextBox7;
+	private: System::Windows::Forms::GroupBox^  groupBox5;
+	private: System::Windows::Forms::Button^  button16;
+	private: System::Windows::Forms::Button^  button15;
+	private: System::Windows::Forms::Button^  button14;
+	private: System::Windows::Forms::Button^  button13;
+	private: System::Windows::Forms::Button^  button12;
+	private: System::Windows::Forms::Button^  button11;
+	private: System::Windows::Forms::Button^  button10;
+	private: System::Windows::Forms::Button^  button9;
+	private: System::Windows::Forms::Button^  button8;
+	private: System::Windows::Forms::Label^  label7;
+	private: System::Windows::Forms::Label^  label8;
+	private: System::Windows::Forms::ColumnHeader^  columnHeader9;
+	private: System::Windows::Forms::ColumnHeader^  columnHeader10;
 	private: System::Windows::Forms::RichTextBox^  richTextBox6;
 	private: System::Windows::Forms::ColumnHeader^  columnHeader8;
 	private: System::Windows::Forms::OpenFileDialog^  openFileDialog1;
@@ -215,9 +317,16 @@ namespace PointCheck {
 			this->columnHeader5 = (gcnew System::Windows::Forms::ColumnHeader());
 			this->columnHeader6 = (gcnew System::Windows::Forms::ColumnHeader());
 			this->columnHeader7 = (gcnew System::Windows::Forms::ColumnHeader());
+			this->columnHeader8 = (gcnew System::Windows::Forms::ColumnHeader());
+			this->columnHeader9 = (gcnew System::Windows::Forms::ColumnHeader());
+			this->columnHeader10 = (gcnew System::Windows::Forms::ColumnHeader());
 			this->tabPage3 = (gcnew System::Windows::Forms::TabPage());
 			this->richTextBox6 = (gcnew System::Windows::Forms::RichTextBox());
 			this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
+			this->label6 = (gcnew System::Windows::Forms::Label());
+			this->richTextBox8 = (gcnew System::Windows::Forms::RichTextBox());
+			this->label5 = (gcnew System::Windows::Forms::Label());
+			this->richTextBox7 = (gcnew System::Windows::Forms::RichTextBox());
 			this->label3 = (gcnew System::Windows::Forms::Label());
 			this->richTextBox4 = (gcnew System::Windows::Forms::RichTextBox());
 			this->label2 = (gcnew System::Windows::Forms::Label());
@@ -238,7 +347,18 @@ namespace PointCheck {
 			this->groupBox4 = (gcnew System::Windows::Forms::GroupBox());
 			this->button6 = (gcnew System::Windows::Forms::Button());
 			this->openFileDialog1 = (gcnew System::Windows::Forms::OpenFileDialog());
-			this->columnHeader8 = (gcnew System::Windows::Forms::ColumnHeader());
+			this->groupBox5 = (gcnew System::Windows::Forms::GroupBox());
+			this->label8 = (gcnew System::Windows::Forms::Label());
+			this->label7 = (gcnew System::Windows::Forms::Label());
+			this->button16 = (gcnew System::Windows::Forms::Button());
+			this->button15 = (gcnew System::Windows::Forms::Button());
+			this->button14 = (gcnew System::Windows::Forms::Button());
+			this->button13 = (gcnew System::Windows::Forms::Button());
+			this->button12 = (gcnew System::Windows::Forms::Button());
+			this->button11 = (gcnew System::Windows::Forms::Button());
+			this->button10 = (gcnew System::Windows::Forms::Button());
+			this->button9 = (gcnew System::Windows::Forms::Button());
+			this->button8 = (gcnew System::Windows::Forms::Button());
 			this->tabControl1->SuspendLayout();
 			this->tabPage1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->BeginInit();
@@ -248,13 +368,14 @@ namespace PointCheck {
 			this->groupBox3->SuspendLayout();
 			this->groupBox1->SuspendLayout();
 			this->groupBox4->SuspendLayout();
+			this->groupBox5->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// statusStrip1
 			// 
-			this->statusStrip1->Location = System::Drawing::Point(0, 554);
+			this->statusStrip1->Location = System::Drawing::Point(0, 798);
 			this->statusStrip1->Name = L"statusStrip1";
-			this->statusStrip1->Size = System::Drawing::Size(940, 22);
+			this->statusStrip1->Size = System::Drawing::Size(1112, 22);
 			this->statusStrip1->TabIndex = 0;
 			this->statusStrip1->Text = L"statusStrip1";
 			// 
@@ -269,7 +390,7 @@ namespace PointCheck {
 			this->tabControl1->Location = System::Drawing::Point(12, 12);
 			this->tabControl1->Name = L"tabControl1";
 			this->tabControl1->SelectedIndex = 0;
-			this->tabControl1->Size = System::Drawing::Size(733, 539);
+			this->tabControl1->Size = System::Drawing::Size(905, 783);
 			this->tabControl1->TabIndex = 1;
 			// 
 			// tabPage1
@@ -278,7 +399,7 @@ namespace PointCheck {
 			this->tabPage1->Location = System::Drawing::Point(4, 22);
 			this->tabPage1->Name = L"tabPage1";
 			this->tabPage1->Padding = System::Windows::Forms::Padding(3);
-			this->tabPage1->Size = System::Drawing::Size(725, 513);
+			this->tabPage1->Size = System::Drawing::Size(897, 757);
 			this->tabPage1->TabIndex = 0;
 			this->tabPage1->Text = L"车辆截图和标点";
 			this->tabPage1->UseVisualStyleBackColor = true;
@@ -288,7 +409,7 @@ namespace PointCheck {
 			this->pictureBox1->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->pictureBox1->Location = System::Drawing::Point(3, 3);
 			this->pictureBox1->Name = L"pictureBox1";
-			this->pictureBox1->Size = System::Drawing::Size(719, 507);
+			this->pictureBox1->Size = System::Drawing::Size(891, 751);
 			this->pictureBox1->SizeMode = System::Windows::Forms::PictureBoxSizeMode::Zoom;
 			this->pictureBox1->TabIndex = 0;
 			this->pictureBox1->TabStop = false;
@@ -301,21 +422,22 @@ namespace PointCheck {
 			this->tabPage2->Location = System::Drawing::Point(4, 22);
 			this->tabPage2->Name = L"tabPage2";
 			this->tabPage2->Padding = System::Windows::Forms::Padding(3);
-			this->tabPage2->Size = System::Drawing::Size(725, 513);
+			this->tabPage2->Size = System::Drawing::Size(897, 757);
 			this->tabPage2->TabIndex = 1;
 			this->tabPage2->Text = L"图片详情列表";
 			this->tabPage2->UseVisualStyleBackColor = true;
 			// 
 			// listView1
 			// 
-			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(8) {
+			this->listView1->Columns->AddRange(gcnew cli::array< System::Windows::Forms::ColumnHeader^  >(10) {
 				this->columnHeader1, this->columnHeader2,
-					this->columnHeader3, this->columnHeader4, this->columnHeader5, this->columnHeader6, this->columnHeader7, this->columnHeader8
+					this->columnHeader3, this->columnHeader4, this->columnHeader5, this->columnHeader6, this->columnHeader7, this->columnHeader8,
+					this->columnHeader9, this->columnHeader10
 			});
 			this->listView1->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->listView1->Location = System::Drawing::Point(3, 3);
 			this->listView1->Name = L"listView1";
-			this->listView1->Size = System::Drawing::Size(719, 507);
+			this->listView1->Size = System::Drawing::Size(891, 751);
 			this->listView1->TabIndex = 0;
 			this->listView1->UseCompatibleStateImageBehavior = false;
 			this->listView1->View = System::Windows::Forms::View::Details;
@@ -354,12 +476,27 @@ namespace PointCheck {
 			this->columnHeader7->Text = L"文件路径（当前）";
 			this->columnHeader7->Width = 720;
 			// 
+			// columnHeader8
+			// 
+			this->columnHeader8->Text = L"文件路径（修改前）";
+			this->columnHeader8->Width = 720;
+			// 
+			// columnHeader9
+			// 
+			this->columnHeader9->Text = L"车牌颜色";
+			this->columnHeader9->Width = 120;
+			// 
+			// columnHeader10
+			// 
+			this->columnHeader10->Text = L"车牌类型";
+			this->columnHeader10->Width = 120;
+			// 
 			// tabPage3
 			// 
 			this->tabPage3->Controls->Add(this->richTextBox6);
 			this->tabPage3->Location = System::Drawing::Point(4, 22);
 			this->tabPage3->Name = L"tabPage3";
-			this->tabPage3->Size = System::Drawing::Size(725, 513);
+			this->tabPage3->Size = System::Drawing::Size(897, 757);
 			this->tabPage3->TabIndex = 2;
 			this->tabPage3->Text = L"使用帮助";
 			this->tabPage3->UseVisualStyleBackColor = true;
@@ -369,13 +506,17 @@ namespace PointCheck {
 			this->richTextBox6->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->richTextBox6->Location = System::Drawing::Point(0, 0);
 			this->richTextBox6->Name = L"richTextBox6";
-			this->richTextBox6->Size = System::Drawing::Size(725, 513);
+			this->richTextBox6->Size = System::Drawing::Size(897, 757);
 			this->richTextBox6->TabIndex = 0;
 			this->richTextBox6->Text = resources->GetString(L"richTextBox6.Text");
 			// 
 			// groupBox2
 			// 
 			this->groupBox2->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox2->Controls->Add(this->label6);
+			this->groupBox2->Controls->Add(this->richTextBox8);
+			this->groupBox2->Controls->Add(this->label5);
+			this->groupBox2->Controls->Add(this->richTextBox7);
 			this->groupBox2->Controls->Add(this->label3);
 			this->groupBox2->Controls->Add(this->richTextBox4);
 			this->groupBox2->Controls->Add(this->label2);
@@ -384,14 +525,64 @@ namespace PointCheck {
 			this->groupBox2->Controls->Add(this->richTextBox1);
 			this->groupBox2->Controls->Add(this->button2);
 			this->groupBox2->Controls->Add(this->button1);
-			this->groupBox2->Location = System::Drawing::Point(750, 131);
+			this->groupBox2->Location = System::Drawing::Point(922, 131);
 			this->groupBox2->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox2->Name = L"groupBox2";
 			this->groupBox2->Padding = System::Windows::Forms::Padding(2);
-			this->groupBox2->Size = System::Drawing::Size(177, 217);
+			this->groupBox2->Size = System::Drawing::Size(177, 269);
 			this->groupBox2->TabIndex = 2;
 			this->groupBox2->TabStop = false;
 			this->groupBox2->Text = L"预处理 / 状态";
+			// 
+			// label6
+			// 
+			this->label6->AutoSize = true;
+			this->label6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->label6->Location = System::Drawing::Point(2, 240);
+			this->label6->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->label6->Name = L"label6";
+			this->label6->Size = System::Drawing::Size(73, 20);
+			this->label6->TabIndex = 13;
+			this->label6->Text = L"车牌类型";
+			// 
+			// richTextBox8
+			// 
+			this->richTextBox8->Enabled = false;
+			this->richTextBox8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->richTextBox8->Location = System::Drawing::Point(84, 235);
+			this->richTextBox8->Margin = System::Windows::Forms::Padding(2);
+			this->richTextBox8->Multiline = false;
+			this->richTextBox8->Name = L"richTextBox8";
+			this->richTextBox8->Size = System::Drawing::Size(73, 26);
+			this->richTextBox8->TabIndex = 12;
+			this->richTextBox8->Text = L"";
+			// 
+			// label5
+			// 
+			this->label5->AutoSize = true;
+			this->label5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->label5->Location = System::Drawing::Point(2, 210);
+			this->label5->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->label5->Name = L"label5";
+			this->label5->Size = System::Drawing::Size(73, 20);
+			this->label5->TabIndex = 11;
+			this->label5->Text = L"车牌颜色";
+			// 
+			// richTextBox7
+			// 
+			this->richTextBox7->Enabled = false;
+			this->richTextBox7->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->richTextBox7->Location = System::Drawing::Point(84, 205);
+			this->richTextBox7->Margin = System::Windows::Forms::Padding(2);
+			this->richTextBox7->Multiline = false;
+			this->richTextBox7->Name = L"richTextBox7";
+			this->richTextBox7->Size = System::Drawing::Size(73, 26);
+			this->richTextBox7->TabIndex = 10;
+			this->richTextBox7->Text = L"";
 			// 
 			// label3
 			// 
@@ -497,7 +688,7 @@ namespace PointCheck {
 			this->groupBox3->Controls->Add(this->button3);
 			this->groupBox3->Controls->Add(this->richTextBox3);
 			this->groupBox3->Controls->Add(this->button4);
-			this->groupBox3->Location = System::Drawing::Point(750, 352);
+			this->groupBox3->Location = System::Drawing::Point(922, 595);
 			this->groupBox3->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox3->Name = L"groupBox3";
 			this->groupBox3->Padding = System::Windows::Forms::Padding(2);
@@ -556,7 +747,7 @@ namespace PointCheck {
 			this->groupBox1->Controls->Add(this->label4);
 			this->groupBox1->Controls->Add(this->richTextBox5);
 			this->groupBox1->Controls->Add(this->button7);
-			this->groupBox1->Location = System::Drawing::Point(750, 12);
+			this->groupBox1->Location = System::Drawing::Point(922, 12);
 			this->groupBox1->Name = L"groupBox1";
 			this->groupBox1->Size = System::Drawing::Size(177, 114);
 			this->groupBox1->TabIndex = 4;
@@ -603,7 +794,7 @@ namespace PointCheck {
 			// 
 			this->groupBox4->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
 			this->groupBox4->Controls->Add(this->button6);
-			this->groupBox4->Location = System::Drawing::Point(750, 490);
+			this->groupBox4->Location = System::Drawing::Point(922, 733);
 			this->groupBox4->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox4->Name = L"groupBox4";
 			this->groupBox4->Padding = System::Windows::Forms::Padding(2);
@@ -627,17 +818,142 @@ namespace PointCheck {
 			// 
 			this->openFileDialog1->FileName = L"openFileDialog1";
 			// 
-			// columnHeader8
+			// groupBox5
 			// 
-			this->columnHeader8->Text = L"文件路径（修改前）";
-			this->columnHeader8->Width = 720;
+			this->groupBox5->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox5->Controls->Add(this->label8);
+			this->groupBox5->Controls->Add(this->label7);
+			this->groupBox5->Controls->Add(this->button16);
+			this->groupBox5->Controls->Add(this->button15);
+			this->groupBox5->Controls->Add(this->button14);
+			this->groupBox5->Controls->Add(this->button13);
+			this->groupBox5->Controls->Add(this->button12);
+			this->groupBox5->Controls->Add(this->button11);
+			this->groupBox5->Controls->Add(this->button10);
+			this->groupBox5->Controls->Add(this->button9);
+			this->groupBox5->Controls->Add(this->button8);
+			this->groupBox5->Location = System::Drawing::Point(924, 405);
+			this->groupBox5->Name = L"groupBox5";
+			this->groupBox5->Size = System::Drawing::Size(177, 185);
+			this->groupBox5->TabIndex = 6;
+			this->groupBox5->TabStop = false;
+			this->groupBox5->Text = L"车牌颜色/类型设置";
+			// 
+			// label8
+			// 
+			this->label8->AutoSize = true;
+			this->label8->Location = System::Drawing::Point(8, 22);
+			this->label8->Name = L"label8";
+			this->label8->Size = System::Drawing::Size(77, 12);
+			this->label8->TabIndex = 10;
+			this->label8->Text = L"车牌颜色设置";
+			// 
+			// label7
+			// 
+			this->label7->AutoSize = true;
+			this->label7->Location = System::Drawing::Point(8, 80);
+			this->label7->Name = L"label7";
+			this->label7->Size = System::Drawing::Size(77, 12);
+			this->label7->TabIndex = 9;
+			this->label7->Text = L"车牌类型设置";
+			// 
+			// button16
+			// 
+			this->button16->Location = System::Drawing::Point(7, 134);
+			this->button16->Name = L"button16";
+			this->button16->Size = System::Drawing::Size(164, 40);
+			this->button16->TabIndex = 8;
+			this->button16->Text = L"设当前颜色和类型为默认\r\n（重开软件生效）";
+			this->button16->UseVisualStyleBackColor = true;
+			this->button16->Click += gcnew System::EventHandler(this, &MyForm::button16_Click);
+			// 
+			// button15
+			// 
+			this->button15->Location = System::Drawing::Point(75, 98);
+			this->button15->Name = L"button15";
+			this->button15->Size = System::Drawing::Size(96, 30);
+			this->button15->TabIndex = 7;
+			this->button15->Text = L"假（虚警）";
+			this->button15->UseVisualStyleBackColor = true;
+			this->button15->Click += gcnew System::EventHandler(this, &MyForm::button15_Click);
+			// 
+			// button14
+			// 
+			this->button14->Location = System::Drawing::Point(41, 98);
+			this->button14->Name = L"button14";
+			this->button14->Size = System::Drawing::Size(28, 30);
+			this->button14->TabIndex = 6;
+			this->button14->Text = L"双";
+			this->button14->UseVisualStyleBackColor = true;
+			this->button14->Click += gcnew System::EventHandler(this, &MyForm::button14_Click);
+			// 
+			// button13
+			// 
+			this->button13->Location = System::Drawing::Point(7, 98);
+			this->button13->Name = L"button13";
+			this->button13->Size = System::Drawing::Size(28, 30);
+			this->button13->TabIndex = 5;
+			this->button13->Text = L"单";
+			this->button13->UseVisualStyleBackColor = true;
+			this->button13->Click += gcnew System::EventHandler(this, &MyForm::button13_Click);
+			// 
+			// button12
+			// 
+			this->button12->Location = System::Drawing::Point(143, 40);
+			this->button12->Name = L"button12";
+			this->button12->Size = System::Drawing::Size(28, 28);
+			this->button12->TabIndex = 4;
+			this->button12->Text = L"绿";
+			this->button12->UseVisualStyleBackColor = true;
+			this->button12->Click += gcnew System::EventHandler(this, &MyForm::button12_Click);
+			// 
+			// button11
+			// 
+			this->button11->Location = System::Drawing::Point(109, 40);
+			this->button11->Name = L"button11";
+			this->button11->Size = System::Drawing::Size(28, 28);
+			this->button11->TabIndex = 3;
+			this->button11->Text = L"黄";
+			this->button11->UseVisualStyleBackColor = true;
+			this->button11->Click += gcnew System::EventHandler(this, &MyForm::button11_Click);
+			// 
+			// button10
+			// 
+			this->button10->Location = System::Drawing::Point(75, 40);
+			this->button10->Name = L"button10";
+			this->button10->Size = System::Drawing::Size(28, 28);
+			this->button10->TabIndex = 2;
+			this->button10->Text = L"蓝";
+			this->button10->UseVisualStyleBackColor = true;
+			this->button10->Click += gcnew System::EventHandler(this, &MyForm::button10_Click);
+			// 
+			// button9
+			// 
+			this->button9->Location = System::Drawing::Point(41, 40);
+			this->button9->Name = L"button9";
+			this->button9->Size = System::Drawing::Size(28, 28);
+			this->button9->TabIndex = 1;
+			this->button9->Text = L"白";
+			this->button9->UseVisualStyleBackColor = true;
+			this->button9->Click += gcnew System::EventHandler(this, &MyForm::button9_Click);
+			// 
+			// button8
+			// 
+			this->button8->Location = System::Drawing::Point(7, 40);
+			this->button8->Name = L"button8";
+			this->button8->Size = System::Drawing::Size(28, 28);
+			this->button8->TabIndex = 0;
+			this->button8->Text = L"黑";
+			this->button8->UseVisualStyleBackColor = true;
+			this->button8->Click += gcnew System::EventHandler(this, &MyForm::button8_Click);
 			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 12);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->AutoSizeMode = System::Windows::Forms::AutoSizeMode::GrowAndShrink;
-			this->ClientSize = System::Drawing::Size(940, 576);
+			this->ClientSize = System::Drawing::Size(1112, 820);
+			this->Controls->Add(this->groupBox5);
 			this->Controls->Add(this->groupBox1);
 			this->Controls->Add(this->groupBox4);
 			this->Controls->Add(this->groupBox3);
@@ -646,7 +962,7 @@ namespace PointCheck {
 			this->Controls->Add(this->statusStrip1);
 			this->KeyPreview = true;
 			this->Name = L"MyForm";
-			this->Text = L"PointCheck";
+			this->Text = L"PointCheck+";
 			this->WindowState = System::Windows::Forms::FormWindowState::Maximized;
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MyForm::MyForm_FormClosing);
 			this->Load += gcnew System::EventHandler(this, &MyForm::MyForm_Load);
@@ -662,6 +978,8 @@ namespace PointCheck {
 			this->groupBox1->ResumeLayout(false);
 			this->groupBox1->PerformLayout();
 			this->groupBox4->ResumeLayout(false);
+			this->groupBox5->ResumeLayout(false);
+			this->groupBox5->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -712,8 +1030,8 @@ namespace PointCheck {
 			}
 
 			//创建历史记录目录
-			if (!Directory::Exists("D:\\PointCheck_Log")) {
-				Directory::CreateDirectory("D:\\PointCheck_Log");
+			if (!Directory::Exists("D:\\PointCheck+_Log")) {
+				Directory::CreateDirectory("D:\\PointCheck+_Log");
 			}
 
 			// load image to img
@@ -751,6 +1069,14 @@ namespace PointCheck {
 			item1->SubItems->Add(Text->Split('\\')[L - 1]->Split('[')[1]->Split(']')[0]);
 			item1->SubItems->Add(Text);
 			item1->SubItems->Add(Text);
+			if (Text->Split('\\')[L - 1]->Split('_')->Length == 3) { //如果存在颜色、类型标志
+				item1->SubItems->Add(ColorList->Split(',')[int::Parse(Text->Split('\\')[L - 1]->Split('_')[1])]);
+				item1->SubItems->Add(TypeList->Split(',')[int::Parse(Text->Split('\\')[L - 1]->Split('_')[2]->Split('.')[0])]);
+			}
+			else {
+				item1->SubItems->Add(DefaultColor);	// 默认蓝色
+				item1->SubItems->Add(DefaultType);	// 默认单层
+			}
 			listView1->Items->Add(item1);
 			try {
 					do {
@@ -769,6 +1095,14 @@ namespace PointCheck {
 						item1->SubItems->Add(Text->Split('\\')[L - 1]->Split('[')[1]->Split(']')[0]);
 						item1->SubItems->Add(Text);
 						item1->SubItems->Add(Text);
+						if (Text->Split('\\')[L - 1]->Split('_')->Length == 3) { //如果存在颜色、类型标志
+							item1->SubItems->Add(ColorList->Split(',')[int::Parse(Text->Split('\\')[L - 1]->Split('_')[1])]);	
+							item1->SubItems->Add(TypeList->Split(',')[int::Parse(Text->Split('\\')[L - 1]->Split('_')[2]->Split('.')[0])]);
+						}
+						else {
+							item1->SubItems->Add(DefaultColor);	// 默认蓝色
+							item1->SubItems->Add(DefaultType);	// 默认单层
+						}
 						listView1->Items->Add(item1);
 					} while (Text);
 					//toolStripStatusLabel1->Text = "加载完成";
@@ -784,6 +1118,9 @@ namespace PointCheck {
 				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 			pictureBox1->Refresh();
 
+			richTextBox7->Text = listView1->Items[0]->SubItems[8]->Text;	// 显示颜色
+			richTextBox8->Text = listView1->Items[0]->SubItems[9]->Text;	// 显示类型
+
 			// MessageBox mention richTextBox5 content
 			if (richTextBox5->Text == "错") {
 				MessageBox::Show("本张 标点顺序错误 或 中心点偏出了边框！");
@@ -791,7 +1128,6 @@ namespace PointCheck {
 			if (OrderIndicate == 0) {
 				MessageBox::Show("恭喜！所有图片通过顺序预检\n只检查标点位置即可！");
 			}
-
 			// Draw points on picture
 
 
@@ -836,6 +1172,9 @@ namespace PointCheck {
 			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
 				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 			pictureBox1->Refresh();
+
+			richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[8]->Text;	// 显示颜色
+			richTextBox8->Text = listView1->Items[SelectedRow]->SubItems[9]->Text;	// 显示类型
 
 			// MessageBox mention richTextBox5 content
 			if (richTextBox5->Text == "错") {
@@ -882,6 +1221,9 @@ namespace PointCheck {
 			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
 				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 			pictureBox1->Refresh();
+
+			richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[8]->Text;	// 显示颜色
+			richTextBox8->Text = listView1->Items[SelectedRow]->SubItems[9]->Text;	// 显示类型
 
 			// MessageBox mention richTextBox5 content
 			if (richTextBox5->Text == "错") {
@@ -935,6 +1277,9 @@ namespace PointCheck {
 						System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 					pictureBox1->Refresh();
 
+					richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[8]->Text;	// 显示颜色
+					richTextBox8->Text = listView1->Items[SelectedRow]->SubItems[9]->Text;	// 显示类型
+
 					// MessageBox mention richTextBox5 content
 					if (richTextBox5->Text == "错") {
 						MessageBox::Show("本张 标点顺序错误 或 中心点偏出了边框！");
@@ -951,9 +1296,9 @@ namespace PointCheck {
 
 	//导出修改过的图片（会替换原有）
 	private: System::Void button6_Click(System::Object^  sender, System::EventArgs^  e) {
-		if (File::Exists("D:\\PointCheck_Log\\history.log")) {
-			// open "D:\\PointCheck_Log\\history.log"
-			FileStream^ history = gcnew FileStream("D:\\PointCheck_Log\\history.log", FileMode::Open, FileAccess::Read);
+		if (File::Exists("D:\\PointCheck+_Log\\history.log")) {
+			// open "D:\\PointCheck+_Log\\history.log"
+			FileStream^ history = gcnew FileStream("D:\\PointCheck+_Log\\history.log", FileMode::Open, FileAccess::Read);
 			StreamReader^ tmphistory = gcnew StreamReader(history, System::Text::Encoding::Unicode);
 			try {
 				String^ CurrentLine = "start";
@@ -962,12 +1307,19 @@ namespace PointCheck {
 					CurrentLine = tmphistory->ReadLine();
 					int Len_curr = CurrentLine->Split(' ')->Length;
 					String^ ImgPath = "";
-					for (int i = 1; i < Len_curr - 1; i++) {
+					for (int i = 1; i < Len_curr - 3; i++) {
 						ImgPath += CurrentLine->Split(' ')[i];
+						if (i != Len_curr - 3) {
+							ImgPath += " ";
+						}
 					}
-					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 1];
+					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 3];
 					String^ NewPath = "";
-					NewPath = ImgPath->Split('[')[0] + "[" + NewKeyPoints + "]" + ImgPath->Split(']')[1];
+					// 都是改过的图片，即使原来有类标也忽略
+					int tmpColor = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 2]);
+					int tmpType = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 1]);
+					NewPath = ImgPath->Split('[')[0] + "[" + NewKeyPoints + "]" +"_" + tmpColor +"_"+ tmpType + "." + ImgPath->Split(']')[1]->Split('.')[1];
+			
 
 					if (!File::Exists(NewPath)) {	//如果点的点正好一样就不存了
 						// save the new image to the directory
@@ -980,14 +1332,14 @@ namespace PointCheck {
 						cvReleaseImage(&img_output);
 						Console::WriteLine("File saved: {0}", NewPath);
 
-						// cut the olg img file to "D:\\PointCheck_Log\\OldImg"
+						// cut the olg img file to "D:\\PointCheck+_Log\\OldImg"
 						String^ ImgName = "";
 						int len_path = ImgPath->Split('\\')->Length;
 						ImgName = ImgPath->Split('\\')[len_path - 1];
-						if (!Directory::Exists("D:\\PointCheck_Log\\OldImg")) {
-							Directory::CreateDirectory("D:\\PointCheck_Log\\OldImg");
+						if (!Directory::Exists("D:\\PointCheck+_Log\\OldImg")) {
+							Directory::CreateDirectory("D:\\PointCheck+_Log\\OldImg");
 						}
-						File::Copy(ImgPath, "D:\\PointCheck_Log\\OldImg\\" + ImgName);
+						File::Copy(ImgPath, "D:\\PointCheck+_Log\\OldImg\\" + ImgName);
 						File::Delete(ImgPath);
 					}	//end of file NewPath exists
 
@@ -999,9 +1351,9 @@ namespace PointCheck {
 			}
 			tmphistory->Close();
 			history->Close();
-			//File::Copy("D:\\PointCheck_Log\\history.log", "D:\\PointCheck_Log\\history" + System::DateTime().ToString() + ".log");
-			File::Copy("D:\\PointCheck_Log\\history.log", "D:\\PointCheck_Log\\history" + DateTime::Now.ToString("yyyy-MM-dd HH_mm_ss") + ".log");
-			File::Delete("D:\\PointCheck_Log\\history.log");
+			//File::Copy("D:\\PointCheck+_Log\\history.log", "D:\\PointCheck+_Log\\history" + System::DateTime().ToString() + ".log");
+			File::Copy("D:\\PointCheck+_Log\\history.log", "D:\\PointCheck+_Log\\history" + DateTime::Now.ToString("yyyy-MM-dd HH_mm_ss") + ".log");
+			File::Delete("D:\\PointCheck+_Log\\history.log");
 		}	//End of file exists
 	}
 
@@ -1146,64 +1498,7 @@ namespace PointCheck {
 				}
 			}
 
-			// Output modified items into D:\PointCheck_Log\history.log
-			// 若改动过且现在所有点都点满
-			if (ChangedOrNot[SelectedRow] == 1 && LocNum[SelectedRow] == 5) {
-				//找到最后一个ChangedOrNot的
-				int LCInd = 199999;	//LastChangedIndex
-				while (ChangedOrNot[LCInd] == 0 && LCInd > 0) {
-					LCInd--;
-				}
-
-				//刷新history.log
-				FileStream^ history = gcnew FileStream("D:\\PointCheck_Log\\history.log", FileMode::Create, FileAccess::ReadWrite);
-				StreamWriter^ tmphistory = gcnew StreamWriter(history, System::Text::Encoding::Unicode);
-				ChangeCount = 0; // reset ChangeCount
-				for (int i = 0; i <= LCInd; i++) {
-					if (ChangedOrNot[i] == 1) {
-						ChangeCount += 1;
-						String^ OneLine = "";
-						OneLine += listView1->Items[i]->SubItems[0]->Text->ToString() + " " +     	//图片序号
-							listView1->Items[i]->SubItems[7]->Text->ToString() + " " + 				//原图片名称
-							listView1->Items[i]->SubItems[5]->Text->ToString();	                	//图片新关键点位置
-						tmphistory->WriteLine(OneLine);
-
-						// change the current path in listview1
-						String^ OldPath_item = listView1->Items[i]->SubItems[6]->Text;
-						String^ NewPath_item = OldPath_item->Split('[')[0] + "[" + listView1->Items[i]->SubItems[5]->Text + "]" + OldPath_item->Split(']')[1];
-						listView1->Items[i]->SubItems[6]->Text = NewPath_item;
-
-						// refresh the PreflightCheck in listview and richTextBox5
-						array<int>^ TJPoint = gcnew array<int>(10);	//save the points into RAM
-						String^ StrPrePoints = listView1->Items[i]->SubItems[5]->Text;
-						for (int i = 0; i < 5; i++) {
-							TJPoint[2 * i] = int::Parse(StrPrePoints->Split('.')[i]->Split(',')[0]->Split('(')[1]);
-							TJPoint[2 * i + 1] = int::Parse(StrPrePoints->Split('.')[i]->Split(',')[1]->Split(')')[0]);
-						}
-						//Preflight check if 
-						//axis x:1>4>0	2>4>3 axis y: 3>4>0 2>4>1
-						if (TJPoint[2] > TJPoint[8] && TJPoint[8] > TJPoint[0] &&
-							TJPoint[4] > TJPoint[8] && TJPoint[8] > TJPoint[6] &&
-							TJPoint[7] > TJPoint[9] && TJPoint[9] > TJPoint[1] &&
-							TJPoint[5] > TJPoint[9] && TJPoint[9] > TJPoint[3]) {
-							listView1->Items[i]->SubItems[4]->Text = "对";
-							richTextBox5->Text = "对";
-						}
-						else {
-							listView1->Items[i]->SubItems[4]->Text = "错错错错错错";
-							richTextBox5->Text = "错";
-						}
-					}
-				}
-				tmphistory->Close();
-				history->Close();
-				richTextBox4->Text = ChangeCount.ToString();	//refresh the ChangeCount in rechTextBox4
-
-				// MessageBox mention richTextBox5 content
-				if (richTextBox5->Text == "错") {
-					MessageBox::Show("本张 标点顺序错误 或 中心点偏出了边框！");
-				}
-			}	// end of modified before save
+			OutHistory();	//检查、输出到history.log并更新listview和richTextBox
 		}	//end of picturebox1->image exists
 	}
 
@@ -1211,11 +1506,25 @@ namespace PointCheck {
 	//窗口加载时做的操作
 	private: System::Void MyForm_Load(System::Object^  sender, System::EventArgs^  e) {
 
-		//若没有D:\PointCheck_Log\history.log则创建
-		if (!Directory::Exists("D:\\PointCheck_Log")) {
-			Directory::CreateDirectory("D:\\PointCheck_Log");
+		//若没有D:\PointCheck+_Log\history.log则创建
+		if (!Directory::Exists("D:\\PointCheck+_Log")) {
+			Directory::CreateDirectory("D:\\PointCheck+_Log");
 		}
 
+		//从"D:\\PointCheck+_Log\\default.log"读取默认的车牌颜色和种类设置
+		if (File::Exists("D:\\PointCheck+_Log\\Default.log")) {	// 如果Default.log文件存在
+			// open "D:\\PointCheck+_Log\\Default.log"
+			FileStream^ default = gcnew FileStream("D:\\PointCheck+_Log\\Default.log", FileMode::Open, FileAccess::Read);
+			StreamReader^ tmpDefault = gcnew StreamReader(default, System::Text::Encoding::Unicode);
+			DefaultColor = tmpDefault->ReadLine();	// 第一行是颜色
+			DefaultType = tmpDefault->ReadLine();	// 第二行是类型
+			tmpDefault->Close();
+			default->Close();
+		}
+		else {
+			DefaultColor = "蓝";	// 默认蓝，0,1,2,3,4对应黑，白，蓝，黄，绿色车牌
+			DefaultType = "单层";	// 默认单层，0,1,2对应单层、双层和假（虚警）车牌
+		}
 	}
 
 
@@ -1245,5 +1554,81 @@ namespace PointCheck {
 			button4_Click(sender, e); //simulate keydown of button 4 下一帧
 		}
 	}
+
+
+
+	// 设置当前颜色和类型为默认值
+	private: System::Void button16_Click(System::Object^  sender, System::EventArgs^  e) {
+		if (richTextBox7->Text != "" && richTextBox8->Text != "") {	// 如果richtextbox7和richtextbox8不为空
+			// Rewrite "D:\\PointCheck+_Log\\Default.log"
+			FileStream^ default = gcnew FileStream("D:\\PointCheck+_Log\\Default.log", FileMode::Create, FileAccess::Write);
+			StreamWriter^ tmpDefault = gcnew StreamWriter(default, System::Text::Encoding::Unicode);
+			tmpDefault->WriteLine(richTextBox7->Text);	// 第一行写颜色
+			tmpDefault->WriteLine(richTextBox8->Text);  // 第二行写类型
+			tmpDefault->Close();
+			default->Close();
+		}
+	}
+
+
+	
+	// 点击黑色、白色、蓝色、黄色、绿色
+#pragma region ColorSettings
+	private: System::Void button8_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[8]->Text = "黑";
+		richTextBox7->Text = "黑";	// 显示颜色
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox	
+	}
+	private: System::Void button9_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[8]->Text = "白";
+		richTextBox7->Text = "白";	// 显示颜色
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+	private: System::Void button10_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[8]->Text = "蓝";
+		richTextBox7->Text = "蓝";	// 显示颜色
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+	private: System::Void button11_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[8]->Text = "黄";
+		richTextBox7->Text = "黄";	// 显示颜色
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+	private: System::Void button12_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[8]->Text = "绿";
+		richTextBox7->Text = "绿";	// 显示颜色
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+#pragma endregion
+
+
+
+	// 点击单、双、假（虚警）
+#pragma region TypeSettings
+	private: System::Void button13_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[9]->Text = "单层";
+		richTextBox8->Text = "单层";	// 显示类型
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+	private: System::Void button14_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[9]->Text = "单层";
+		richTextBox8->Text = "双层";	// 显示类型
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+	private: System::Void button15_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[9]->Text = "单层";
+		richTextBox8->Text = "假(虚警)";	// 显示类型
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+#pragma endregion
+
 };// end of public ref class MyForm : public System::Windows::Forms::Form
 }// end of namespace PointCheck
