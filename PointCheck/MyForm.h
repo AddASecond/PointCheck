@@ -55,6 +55,8 @@ namespace PointCheck {
 		array<int, 2>^ LPLoc = gcnew array<int, 2>(200000, 10); //to save license plate location
 		array<int^, 2>^ LPLocBox = gcnew array<int^, 2>(200000, 10); //to save license plate location on picturebox
 		array<int>^ LocNum = gcnew array <int>(200000);//to memory the number of painted points in each image
+	private: System::Windows::Forms::GroupBox^  groupBox7;
+	public:
 		array<int>^ ChangedOrNot = gcnew array<int>(200000);//记录这次挑图那些图更改了，更改为1；
 
 		//add my functions here 2016
@@ -330,7 +332,9 @@ namespace PointCheck {
 			this->tabPage3 = (gcnew System::Windows::Forms::TabPage());
 			this->richTextBox6 = (gcnew System::Windows::Forms::RichTextBox());
 			this->groupBox2 = (gcnew System::Windows::Forms::GroupBox());
+			this->label4 = (gcnew System::Windows::Forms::Label());
 			this->label9 = (gcnew System::Windows::Forms::Label());
+			this->richTextBox5 = (gcnew System::Windows::Forms::RichTextBox());
 			this->richTextBox9 = (gcnew System::Windows::Forms::RichTextBox());
 			this->label6 = (gcnew System::Windows::Forms::Label());
 			this->richTextBox8 = (gcnew System::Windows::Forms::RichTextBox());
@@ -350,8 +354,6 @@ namespace PointCheck {
 			this->richTextBox3 = (gcnew System::Windows::Forms::RichTextBox());
 			this->button4 = (gcnew System::Windows::Forms::Button());
 			this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
-			this->label4 = (gcnew System::Windows::Forms::Label());
-			this->richTextBox5 = (gcnew System::Windows::Forms::RichTextBox());
 			this->button7 = (gcnew System::Windows::Forms::Button());
 			this->groupBox4 = (gcnew System::Windows::Forms::GroupBox());
 			this->button6 = (gcnew System::Windows::Forms::Button());
@@ -370,6 +372,7 @@ namespace PointCheck {
 			this->button8 = (gcnew System::Windows::Forms::Button());
 			this->groupBox6 = (gcnew System::Windows::Forms::GroupBox());
 			this->richTextBox10 = (gcnew System::Windows::Forms::RichTextBox());
+			this->groupBox7 = (gcnew System::Windows::Forms::GroupBox());
 			this->tabControl1->SuspendLayout();
 			this->tabPage1->SuspendLayout();
 			(cli::safe_cast<System::ComponentModel::ISupportInitialize^>(this->pictureBox1))->BeginInit();
@@ -381,13 +384,14 @@ namespace PointCheck {
 			this->groupBox4->SuspendLayout();
 			this->groupBox5->SuspendLayout();
 			this->groupBox6->SuspendLayout();
+			this->groupBox7->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// statusStrip1
 			// 
 			this->statusStrip1->Location = System::Drawing::Point(0, 916);
 			this->statusStrip1->Name = L"statusStrip1";
-			this->statusStrip1->Size = System::Drawing::Size(1158, 22);
+			this->statusStrip1->Size = System::Drawing::Size(1194, 22);
 			this->statusStrip1->TabIndex = 0;
 			this->statusStrip1->Text = L"statusStrip1";
 			// 
@@ -399,10 +403,10 @@ namespace PointCheck {
 			this->tabControl1->Controls->Add(this->tabPage1);
 			this->tabControl1->Controls->Add(this->tabPage2);
 			this->tabControl1->Controls->Add(this->tabPage3);
-			this->tabControl1->Location = System::Drawing::Point(12, 12);
+			this->tabControl1->Location = System::Drawing::Point(12, 66);
 			this->tabControl1->Name = L"tabControl1";
 			this->tabControl1->SelectedIndex = 0;
-			this->tabControl1->Size = System::Drawing::Size(914, 901);
+			this->tabControl1->Size = System::Drawing::Size(950, 847);
 			this->tabControl1->TabIndex = 1;
 			// 
 			// tabPage1
@@ -411,7 +415,7 @@ namespace PointCheck {
 			this->tabPage1->Location = System::Drawing::Point(4, 22);
 			this->tabPage1->Name = L"tabPage1";
 			this->tabPage1->Padding = System::Windows::Forms::Padding(3);
-			this->tabPage1->Size = System::Drawing::Size(906, 875);
+			this->tabPage1->Size = System::Drawing::Size(942, 821);
 			this->tabPage1->TabIndex = 0;
 			this->tabPage1->Text = L"车辆截图和标点";
 			this->tabPage1->UseVisualStyleBackColor = true;
@@ -422,7 +426,7 @@ namespace PointCheck {
 			this->pictureBox1->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->pictureBox1->Location = System::Drawing::Point(3, 3);
 			this->pictureBox1->Name = L"pictureBox1";
-			this->pictureBox1->Size = System::Drawing::Size(900, 869);
+			this->pictureBox1->Size = System::Drawing::Size(936, 815);
 			this->pictureBox1->SizeMode = System::Windows::Forms::PictureBoxSizeMode::Zoom;
 			this->pictureBox1->TabIndex = 0;
 			this->pictureBox1->TabStop = false;
@@ -435,7 +439,7 @@ namespace PointCheck {
 			this->tabPage2->Location = System::Drawing::Point(4, 22);
 			this->tabPage2->Name = L"tabPage2";
 			this->tabPage2->Padding = System::Windows::Forms::Padding(3);
-			this->tabPage2->Size = System::Drawing::Size(906, 875);
+			this->tabPage2->Size = System::Drawing::Size(906, 821);
 			this->tabPage2->TabIndex = 1;
 			this->tabPage2->Text = L"图片详情列表";
 			this->tabPage2->UseVisualStyleBackColor = true;
@@ -451,7 +455,7 @@ namespace PointCheck {
 			this->listView1->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->listView1->Location = System::Drawing::Point(3, 3);
 			this->listView1->Name = L"listView1";
-			this->listView1->Size = System::Drawing::Size(900, 869);
+			this->listView1->Size = System::Drawing::Size(900, 815);
 			this->listView1->TabIndex = 0;
 			this->listView1->UseCompatibleStateImageBehavior = false;
 			this->listView1->View = System::Windows::Forms::View::Details;
@@ -514,7 +518,7 @@ namespace PointCheck {
 			this->tabPage3->Controls->Add(this->richTextBox6);
 			this->tabPage3->Location = System::Drawing::Point(4, 22);
 			this->tabPage3->Name = L"tabPage3";
-			this->tabPage3->Size = System::Drawing::Size(906, 875);
+			this->tabPage3->Size = System::Drawing::Size(906, 821);
 			this->tabPage3->TabIndex = 2;
 			this->tabPage3->Text = L"使用帮助";
 			this->tabPage3->UseVisualStyleBackColor = true;
@@ -525,14 +529,16 @@ namespace PointCheck {
 			this->richTextBox6->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->richTextBox6->Location = System::Drawing::Point(0, 0);
 			this->richTextBox6->Name = L"richTextBox6";
-			this->richTextBox6->Size = System::Drawing::Size(906, 875);
+			this->richTextBox6->Size = System::Drawing::Size(906, 821);
 			this->richTextBox6->TabIndex = 0;
 			this->richTextBox6->Text = resources->GetString(L"richTextBox6.Text");
 			// 
 			// groupBox2
 			// 
 			this->groupBox2->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox2->Controls->Add(this->label4);
 			this->groupBox2->Controls->Add(this->label9);
+			this->groupBox2->Controls->Add(this->richTextBox5);
 			this->groupBox2->Controls->Add(this->richTextBox9);
 			this->groupBox2->Controls->Add(this->label6);
 			this->groupBox2->Controls->Add(this->richTextBox8);
@@ -544,35 +550,58 @@ namespace PointCheck {
 			this->groupBox2->Controls->Add(this->richTextBox2);
 			this->groupBox2->Controls->Add(this->label1);
 			this->groupBox2->Controls->Add(this->richTextBox1);
-			this->groupBox2->Controls->Add(this->button2);
-			this->groupBox2->Controls->Add(this->button1);
-			this->groupBox2->Location = System::Drawing::Point(932, 131);
+			this->groupBox2->Location = System::Drawing::Point(970, 12);
 			this->groupBox2->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox2->Name = L"groupBox2";
 			this->groupBox2->Padding = System::Windows::Forms::Padding(2);
-			this->groupBox2->Size = System::Drawing::Size(213, 301);
+			this->groupBox2->Size = System::Drawing::Size(213, 245);
 			this->groupBox2->TabIndex = 2;
 			this->groupBox2->TabStop = false;
-			this->groupBox2->Text = L"预处理 / 状态";
+			this->groupBox2->Text = L"状态";
+			// 
+			// label4
+			// 
+			this->label4->AutoSize = true;
+			this->label4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->label4->Location = System::Drawing::Point(-3, 18);
+			this->label4->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
+			this->label4->Name = L"label4";
+			this->label4->Size = System::Drawing::Size(73, 40);
+			this->label4->TabIndex = 11;
+			this->label4->Text = L"本张标点\r\n顺序预检";
 			// 
 			// label9
 			// 
 			this->label9->AutoSize = true;
 			this->label9->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label9->Location = System::Drawing::Point(2, 270);
+			this->label9->Location = System::Drawing::Point(4, 213);
 			this->label9->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label9->Name = L"label9";
 			this->label9->Size = System::Drawing::Size(73, 20);
 			this->label9->TabIndex = 15;
 			this->label9->Text = L"车牌号码";
 			// 
+			// richTextBox5
+			// 
+			this->richTextBox5->Enabled = false;
+			this->richTextBox5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
+				static_cast<System::Byte>(0)));
+			this->richTextBox5->Location = System::Drawing::Point(90, 29);
+			this->richTextBox5->Margin = System::Windows::Forms::Padding(2);
+			this->richTextBox5->Multiline = false;
+			this->richTextBox5->Name = L"richTextBox5";
+			this->richTextBox5->Size = System::Drawing::Size(108, 26);
+			this->richTextBox5->TabIndex = 10;
+			this->richTextBox5->Text = L"";
+			// 
 			// richTextBox9
 			// 
 			this->richTextBox9->Enabled = false;
 			this->richTextBox9->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox9->Location = System::Drawing::Point(84, 265);
+			this->richTextBox9->Location = System::Drawing::Point(90, 208);
 			this->richTextBox9->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox9->Multiline = false;
 			this->richTextBox9->Name = L"richTextBox9";
@@ -585,7 +614,7 @@ namespace PointCheck {
 			this->label6->AutoSize = true;
 			this->label6->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label6->Location = System::Drawing::Point(2, 240);
+			this->label6->Location = System::Drawing::Point(4, 183);
 			this->label6->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label6->Name = L"label6";
 			this->label6->Size = System::Drawing::Size(73, 20);
@@ -597,7 +626,7 @@ namespace PointCheck {
 			this->richTextBox8->Enabled = false;
 			this->richTextBox8->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox8->Location = System::Drawing::Point(84, 235);
+			this->richTextBox8->Location = System::Drawing::Point(90, 178);
 			this->richTextBox8->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox8->Multiline = false;
 			this->richTextBox8->Name = L"richTextBox8";
@@ -610,7 +639,7 @@ namespace PointCheck {
 			this->label5->AutoSize = true;
 			this->label5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label5->Location = System::Drawing::Point(2, 210);
+			this->label5->Location = System::Drawing::Point(4, 153);
 			this->label5->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label5->Name = L"label5";
 			this->label5->Size = System::Drawing::Size(73, 20);
@@ -622,7 +651,7 @@ namespace PointCheck {
 			this->richTextBox7->Enabled = false;
 			this->richTextBox7->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox7->Location = System::Drawing::Point(84, 205);
+			this->richTextBox7->Location = System::Drawing::Point(90, 148);
 			this->richTextBox7->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox7->Multiline = false;
 			this->richTextBox7->Name = L"richTextBox7";
@@ -635,7 +664,7 @@ namespace PointCheck {
 			this->label3->AutoSize = true;
 			this->label3->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label3->Location = System::Drawing::Point(2, 180);
+			this->label3->Location = System::Drawing::Point(4, 123);
 			this->label3->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label3->Name = L"label3";
 			this->label3->Size = System::Drawing::Size(73, 20);
@@ -647,7 +676,7 @@ namespace PointCheck {
 			this->richTextBox4->Enabled = false;
 			this->richTextBox4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox4->Location = System::Drawing::Point(84, 175);
+			this->richTextBox4->Location = System::Drawing::Point(90, 118);
 			this->richTextBox4->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox4->Multiline = false;
 			this->richTextBox4->Name = L"richTextBox4";
@@ -660,7 +689,7 @@ namespace PointCheck {
 			this->label2->AutoSize = true;
 			this->label2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label2->Location = System::Drawing::Point(2, 150);
+			this->label2->Location = System::Drawing::Point(4, 93);
 			this->label2->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label2->Name = L"label2";
 			this->label2->Size = System::Drawing::Size(73, 20);
@@ -672,7 +701,7 @@ namespace PointCheck {
 			this->richTextBox2->Enabled = false;
 			this->richTextBox2->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox2->Location = System::Drawing::Point(84, 147);
+			this->richTextBox2->Location = System::Drawing::Point(90, 90);
 			this->richTextBox2->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox2->Multiline = false;
 			this->richTextBox2->Name = L"richTextBox2";
@@ -685,7 +714,7 @@ namespace PointCheck {
 			this->label1->AutoSize = true;
 			this->label1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->label1->Location = System::Drawing::Point(16, 121);
+			this->label1->Location = System::Drawing::Point(18, 64);
 			this->label1->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
 			this->label1->Name = L"label1";
 			this->label1->Size = System::Drawing::Size(57, 20);
@@ -697,7 +726,7 @@ namespace PointCheck {
 			this->richTextBox1->Enabled = false;
 			this->richTextBox1->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
 				static_cast<System::Byte>(0)));
-			this->richTextBox1->Location = System::Drawing::Point(84, 118);
+			this->richTextBox1->Location = System::Drawing::Point(90, 61);
 			this->richTextBox1->Margin = System::Windows::Forms::Padding(2);
 			this->richTextBox1->Multiline = false;
 			this->richTextBox1->Name = L"richTextBox1";
@@ -707,10 +736,10 @@ namespace PointCheck {
 			// 
 			// button2
 			// 
-			this->button2->Location = System::Drawing::Point(36, 46);
+			this->button2->Location = System::Drawing::Point(55, 16);
 			this->button2->Margin = System::Windows::Forms::Padding(2);
 			this->button2->Name = L"button2";
-			this->button2->Size = System::Drawing::Size(136, 68);
+			this->button2->Size = System::Drawing::Size(452, 32);
 			this->button2->TabIndex = 1;
 			this->button2->Text = L"从.set导入";
 			this->button2->UseVisualStyleBackColor = true;
@@ -718,10 +747,10 @@ namespace PointCheck {
 			// 
 			// button1
 			// 
-			this->button1->Location = System::Drawing::Point(35, 16);
+			this->button1->Location = System::Drawing::Point(7, 19);
 			this->button1->Margin = System::Windows::Forms::Padding(2);
 			this->button1->Name = L"button1";
-			this->button1->Size = System::Drawing::Size(137, 26);
+			this->button1->Size = System::Drawing::Size(44, 26);
 			this->button1->TabIndex = 0;
 			this->button1->Text = L"清空";
 			this->button1->UseVisualStyleBackColor = true;
@@ -734,7 +763,7 @@ namespace PointCheck {
 			this->groupBox3->Controls->Add(this->button3);
 			this->groupBox3->Controls->Add(this->richTextBox3);
 			this->groupBox3->Controls->Add(this->button4);
-			this->groupBox3->Location = System::Drawing::Point(931, 706);
+			this->groupBox3->Location = System::Drawing::Point(970, 530);
 			this->groupBox3->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox3->Name = L"groupBox3";
 			this->groupBox3->Padding = System::Windows::Forms::Padding(2);
@@ -790,47 +819,20 @@ namespace PointCheck {
 			// groupBox1
 			// 
 			this->groupBox1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
-			this->groupBox1->Controls->Add(this->label4);
-			this->groupBox1->Controls->Add(this->richTextBox5);
 			this->groupBox1->Controls->Add(this->button7);
-			this->groupBox1->Location = System::Drawing::Point(932, 12);
+			this->groupBox1->Location = System::Drawing::Point(545, 12);
 			this->groupBox1->Name = L"groupBox1";
-			this->groupBox1->Size = System::Drawing::Size(213, 114);
+			this->groupBox1->Size = System::Drawing::Size(192, 70);
 			this->groupBox1->TabIndex = 4;
 			this->groupBox1->TabStop = false;
 			this->groupBox1->Text = L"附加功能";
 			// 
-			// label4
-			// 
-			this->label4->AutoSize = true;
-			this->label4->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->label4->Location = System::Drawing::Point(4, 70);
-			this->label4->Margin = System::Windows::Forms::Padding(2, 0, 2, 0);
-			this->label4->Name = L"label4";
-			this->label4->Size = System::Drawing::Size(73, 40);
-			this->label4->TabIndex = 11;
-			this->label4->Text = L"本张标点\r\n顺序预检";
-			// 
-			// richTextBox5
-			// 
-			this->richTextBox5->Enabled = false;
-			this->richTextBox5->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 13.2F, System::Drawing::FontStyle::Regular, System::Drawing::GraphicsUnit::Point,
-				static_cast<System::Byte>(0)));
-			this->richTextBox5->Location = System::Drawing::Point(96, 70);
-			this->richTextBox5->Margin = System::Windows::Forms::Padding(2);
-			this->richTextBox5->Multiline = false;
-			this->richTextBox5->Name = L"richTextBox5";
-			this->richTextBox5->Size = System::Drawing::Size(94, 26);
-			this->richTextBox5->TabIndex = 10;
-			this->richTextBox5->Text = L"";
-			// 
 			// button7
 			// 
-			this->button7->Location = System::Drawing::Point(36, 19);
+			this->button7->Location = System::Drawing::Point(22, 16);
 			this->button7->Margin = System::Windows::Forms::Padding(2);
 			this->button7->Name = L"button7";
-			this->button7->Size = System::Drawing::Size(136, 47);
+			this->button7->Size = System::Drawing::Size(150, 41);
 			this->button7->TabIndex = 5;
 			this->button7->Text = L"开启防误触\r\n（开启后图像不能点）";
 			this->button7->UseVisualStyleBackColor = true;
@@ -840,11 +842,11 @@ namespace PointCheck {
 			// 
 			this->groupBox4->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
 			this->groupBox4->Controls->Add(this->button6);
-			this->groupBox4->Location = System::Drawing::Point(931, 844);
+			this->groupBox4->Location = System::Drawing::Point(742, 12);
 			this->groupBox4->Margin = System::Windows::Forms::Padding(2);
 			this->groupBox4->Name = L"groupBox4";
 			this->groupBox4->Padding = System::Windows::Forms::Padding(2);
-			this->groupBox4->Size = System::Drawing::Size(213, 62);
+			this->groupBox4->Size = System::Drawing::Size(213, 70);
 			this->groupBox4->TabIndex = 5;
 			this->groupBox4->TabStop = false;
 			this->groupBox4->Text = L" 导出";
@@ -878,7 +880,7 @@ namespace PointCheck {
 			this->groupBox5->Controls->Add(this->button10);
 			this->groupBox5->Controls->Add(this->button9);
 			this->groupBox5->Controls->Add(this->button8);
-			this->groupBox5->Location = System::Drawing::Point(930, 516);
+			this->groupBox5->Location = System::Drawing::Point(970, 340);
 			this->groupBox5->Name = L"groupBox5";
 			this->groupBox5->Size = System::Drawing::Size(215, 185);
 			this->groupBox5->TabIndex = 6;
@@ -965,7 +967,7 @@ namespace PointCheck {
 			// 
 			// button10
 			// 
-			this->button10->Location = System::Drawing::Point(89, 38);
+			this->button10->Location = System::Drawing::Point(21, 38);
 			this->button10->Name = L"button10";
 			this->button10->Size = System::Drawing::Size(28, 28);
 			this->button10->TabIndex = 2;
@@ -975,7 +977,7 @@ namespace PointCheck {
 			// 
 			// button9
 			// 
-			this->button9->Location = System::Drawing::Point(21, 38);
+			this->button9->Location = System::Drawing::Point(89, 38);
 			this->button9->Name = L"button9";
 			this->button9->Size = System::Drawing::Size(28, 28);
 			this->button9->TabIndex = 1;
@@ -997,7 +999,7 @@ namespace PointCheck {
 			// 
 			this->groupBox6->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
 			this->groupBox6->Controls->Add(this->richTextBox10);
-			this->groupBox6->Location = System::Drawing::Point(933, 438);
+			this->groupBox6->Location = System::Drawing::Point(970, 262);
 			this->groupBox6->Name = L"groupBox6";
 			this->groupBox6->Size = System::Drawing::Size(211, 72);
 			this->groupBox6->TabIndex = 7;
@@ -1018,17 +1020,29 @@ namespace PointCheck {
 			this->richTextBox10->Text = L"1234567";
 			this->richTextBox10->KeyDown += gcnew System::Windows::Forms::KeyEventHandler(this, &MyForm::richTextBox10_KeyDown);
 			// 
+			// groupBox7
+			// 
+			this->groupBox7->Controls->Add(this->button2);
+			this->groupBox7->Controls->Add(this->button1);
+			this->groupBox7->Location = System::Drawing::Point(12, 12);
+			this->groupBox7->Name = L"groupBox7";
+			this->groupBox7->Size = System::Drawing::Size(512, 55);
+			this->groupBox7->TabIndex = 8;
+			this->groupBox7->TabStop = false;
+			this->groupBox7->Text = L"预处理";
+			// 
 			// MyForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 12);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
 			this->AutoSizeMode = System::Windows::Forms::AutoSizeMode::GrowAndShrink;
 			this->BackColor = System::Drawing::Color::LightGreen;
-			this->ClientSize = System::Drawing::Size(1158, 938);
+			this->ClientSize = System::Drawing::Size(1194, 938);
+			this->Controls->Add(this->groupBox7);
 			this->Controls->Add(this->groupBox6);
+			this->Controls->Add(this->groupBox4);
 			this->Controls->Add(this->groupBox5);
 			this->Controls->Add(this->groupBox1);
-			this->Controls->Add(this->groupBox4);
 			this->Controls->Add(this->groupBox3);
 			this->Controls->Add(this->groupBox2);
 			this->Controls->Add(this->tabControl1);
@@ -1036,7 +1050,7 @@ namespace PointCheck {
 			this->ForeColor = System::Drawing::SystemColors::ActiveCaptionText;
 			this->KeyPreview = true;
 			this->Name = L"MyForm";
-			this->Text = L"PointCheck+护眼版护眼版";
+			this->Text = L"PointCheck+护眼版";
 			this->WindowState = System::Windows::Forms::FormWindowState::Maximized;
 			this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MyForm::MyForm_FormClosing);
 			this->Load += gcnew System::EventHandler(this, &MyForm::MyForm_Load);
@@ -1050,11 +1064,11 @@ namespace PointCheck {
 			this->groupBox2->PerformLayout();
 			this->groupBox3->ResumeLayout(false);
 			this->groupBox1->ResumeLayout(false);
-			this->groupBox1->PerformLayout();
 			this->groupBox4->ResumeLayout(false);
 			this->groupBox5->ResumeLayout(false);
 			this->groupBox5->PerformLayout();
 			this->groupBox6->ResumeLayout(false);
+			this->groupBox7->ResumeLayout(false);
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -1398,16 +1412,19 @@ namespace PointCheck {
 
 	//导出修改过的图片（会替换原有）
 	private: System::Void button6_Click(System::Object^  sender, System::EventArgs^  e) {
-		// 存车牌号
-		if (listView1->Items[SelectedRow]->SubItems[8]->Text != richTextBox10->Text) {	// 如果有改动
-			listView1->Items[SelectedRow]->SubItems[8]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
-			ChangedOrNot[SelectedRow] = 1;
-			OutHistory();
-		}
+		if (PicCount!=0){ 
+			// 存车牌号
+			if (listView1->Items[SelectedRow]->SubItems[8]->Text != richTextBox10->Text) {	// 如果有改动
+				listView1->Items[SelectedRow]->SubItems[8]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
+				ChangedOrNot[SelectedRow] = 1;
+				OutHistory();
+			}
+		}	// end of if (PicCount!=0)
+
 		// 导出history.log里面记录的更改过的图片
-		if (File::Exists("D:\\PointCheck+护眼版护眼版_Log\\history.log")) {
-			// open "D:\\PointCheck+护眼版护眼版_Log\\history.log"
-			FileStream^ history = gcnew FileStream("D:\\PointCheck+护眼版护眼版_Log\\history.log", FileMode::Open, FileAccess::Read);
+		if (File::Exists("D:\\PointCheck+护眼版_Log\\history.log")) {
+			// open "D:\\PointCheck+护眼版_Log\\history.log"
+			FileStream^ history = gcnew FileStream("D:\\PointCheck+护眼版_Log\\history.log", FileMode::Open, FileAccess::Read);
 			StreamReader^ tmphistory = gcnew StreamReader(history, System::Text::Encoding::Unicode);
 			try {
 				String^ CurrentLine = "start";
