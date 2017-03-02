@@ -1,0 +1,52 @@
+  PointCheck.MyForm.resources - Embedded, ContainedInManifestFile, 
+ImageRuntimeVersion: v4.0.30319
+Assembly PointCheck_x64d, Version=0.0.*, Culture=Invariant Language (Invariant Country): 
+	hash=SHA1, flags=PublicKey
+Assembly mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Data, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a: 
+	hash=None, flags=None
+Assembly System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Assembly System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089: 
+	hash=None, flags=None
+Class PointCheck.MyForm: AutoLayout, AnsiClass, Class, Public, BeforeFieldInit
+  :System.Windows.Forms.Form
+    Void .ctor(): PrivateScope, Public, HideBySig, SpecialName, RTSpecialName
+  Fields:
+    Int32 PicCount : Public
+    Int32 SelectedRow : Public
+    Int32 SelectedRow_Last : Public
+    Int32 ChangeCount : Public
+    Int32 L : Public
+    Int32 ResizeOrNot : Public
+    Int32 tmpLocX : Public
+    Int32 tmpLocY : Public
+    Int32 OrderIndicate : Public
+    System.String DefaultColor : Public
+    System.String DefaultType : Public
+    System.String ColorList : Public
+    System.String TypeList : Public
+    System.String directory : Public
+    System.Drawing.Image m_bmp : Public
+    System.Drawing.Point m_ptBmp : Public
+    System.Drawing.Point m_ptCanvas : Public
+    System.Drawing.Point m_ptCanvasBuf : Public
+    Single m_nScale : Public
+    System.Drawing.Point m_ptMouseDown : Public
+    System.String m_strMousePt : Public
+  Methods:
+    MarshalString(String, basic_string<char\,std::char_traits<char>\,std::allocator<char> >* IsImplicitlyDereferenced): PrivateScope, Public, HideBySig
+    delLicenseFiles(String, String): PrivateScope, Public, HideBySig
+    PreflightCheck(String, Int32): PrivateScope, Public, HideBySig
+    LocSave(String, Int32, _IplImage*): PrivateScope, Public, HideBySig
+    OutHistory(): PrivateScope, Public, HideBySig
+    ColorTypeConvert(String): PrivateScope, Public, HideBySig
+    ListViewUpdate(Int32): PrivateScope, Public, HideBySig
+    MiddlePointCheck(Int32[]): PrivateScope, Public, HideBySig
+    pnpoly(Int32, Int32*, Int32*, Int32, Int32): PrivateScope, Public, HideBySig
+    locReset(): PrivateScope, Public, HideBySig
