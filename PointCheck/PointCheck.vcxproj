@@ -29,7 +29,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v120</PlatformToolset>
     <CLRSupport>true</CLRSupport>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -74,13 +74,14 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>..\bin\x86\</OutDir>
+    <OutDir>..\..\..\bin\Release</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(OPENCV)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(OPENCV)\x64\vc14\lib;$(LibraryPath)</LibraryPath>
-    <OutDir>..\bin\x64</OutDir>
+    <OutDir>..\..\..\bin\x64</OutDir>
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
     <TargetName>$(ProjectName)</TargetName>
     <TargetExt>.exe</TargetExt>
@@ -89,15 +90,15 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>D:\Program Files\opencv3.0.0\opencv\build\include;$(IncludePath)</IncludePath>
     <LibraryPath>D:\Program Files\opencv3.0.0\opencv\build\x86\vc12\lib;D:\Program Files\opencv3.0.0\opencv\build\x86\vc12\staticlib;$(LibraryPath)</LibraryPath>
-    <IntDir>$(Configuration)\</IntDir>
-    <OutDir>..\bin\x86\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>..\..\..\bin\Release</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(OPENCV)\include;$(IncludePath)</IncludePath>
     <LibraryPath>$(OPENCV)\x64\vc14\lib;$(LibraryPath)</LibraryPath>
     <TargetName>$(ProjectName)</TargetName>
-    <OutDir>..\bin\x64</OutDir>
+    <OutDir>..\..\..\bin\x64</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -17,12 +17,22 @@ namespace PointCheck {
 
 												  //必须写在托管类外面，方便调用cvRelease释放图片
 	IplImage* img; //openCV image 
+	IplImage* img_part; //openCV small image
+	IplImage* img_cur;	//openCV Current image
 	IplImage* img_output; //输出时用的图
+	cv::Rect rectLpOri;	//存储原图车牌框的位置(根据5点判断)
+	cv::Rect rectPicBox;	//存储picturebox1中放大的车牌位置
 
 						  // Struct for points
 	typedef struct Points {
 		int a[10];	// ten points, 5 pairs of (x_i,y_i)
 	}FivePoints;
+
+	typedef struct nResize 
+	{
+		double dResizeFactorXY;	//缩放系数
+		CvRect rectVehLpNumColor;	//车牌rect
+	}infoRectResize;
 
 	std::vector<FivePoints> LPLoc;
 	std::vector<FivePoints>::iterator LPLoc_iter;
@@ -39,6 +49,7 @@ namespace PointCheck {
 		std::string modefiedPath;	// 已改但未导出的图片路径（但此图片可能不是第一次改动）
 		std::string exportedPath;	// 已导出的图片路径（最近一次导出，因为之前导出的图片为了避免重复肯定会删掉）
 	}ThreePaths;
+
 
 	std::vector<ThreePaths> PathsVector;	// 存放每张图片所对应的3个路径，ListView中也会显示一份
 	std::vector<ThreePaths>::iterator PathsVector_iter;
@@ -75,9 +86,13 @@ namespace PointCheck {
 		String^ DefaultType = "单层";	// 默认单层，0,1,2对应单层、双层和假（虚警）车牌
 		String^ ColorList = "未知,白,黑,蓝,黄,绿";
 		String^ TypeList = "单层,双层,假(虚警)";
+		//bool imgPartUP = false;      //图像显示上半部分
+		bool imgPartBottom = false;  //图片显示下半部分
+		bool imgFull = true;         //显示原始图片
 		System::String^ directory = "";// directory to save the tmpLogfile to prevent 
 									   //CvMemStorage* storage = 0;
 
+		//array<Color>^ vehLpColor = gcnew array<Color>(6);
 
 									   // 平移缩放功能所需变量
 		Image^ m_bmp;               //画布中的图像
@@ -87,8 +102,6 @@ namespace PointCheck {
 		float m_nScale = 1.0F;      //缩放比例
 
 		Point m_ptMouseDown;        //鼠标点下时在设备坐标上的坐标
-	private: System::Windows::Forms::ColumnHeader^  columnHeader13;
-	public:
 		String^ m_strMousePt;        //鼠标当前位置对应的坐标
 
 
@@ -159,7 +172,7 @@ namespace PointCheck {
 			//Prior knowledge: all 5 points exist in filename
 			//LocNum_iter = LocNum.begin() + SelectedRow;
 			//LocNum_iter[0] = 5;
-			while (LocNum.size()<SelectedRow + 1) {
+			while (LocNum.size() < SelectedRow + 1) {
 				LocNum.push_back(0);	//先往vector里补0再赋值
 			}
 			LocNum[SelectedRow] = 5;
@@ -169,7 +182,7 @@ namespace PointCheck {
 				//LPLoc_iter = LPLoc.begin() + SelectedRow;	
 				//LPLoc_iter[0].a[];
 				FivePoints tmpFivePoints;
-				while (LPLoc.size()<SelectedRow + 1) {
+				while (LPLoc.size() < SelectedRow + 1) {
 					LPLoc.push_back(tmpFivePoints);	//先往vector里补tmpFivePoints再赋值
 				}
 				LPLoc[SelectedRow].a[2 * i] = int::Parse(StrPrePoints->Split('.')[i]->Split(',')[0]->Split('(')[1]);
@@ -185,7 +198,7 @@ namespace PointCheck {
 				double wdiff = (pictureBox1->ClientSize.Width - (double)img->width*resizeFactor) / 2;
 				double hdiff = (pictureBox1->ClientSize.Height - (double)img->height*resizeFactor) / 2;
 
-				while (LPLocBox.size()<SelectedRow + 1) {
+				while (LPLocBox.size() < SelectedRow + 1) {
 					LPLocBox.push_back(tmpFivePoints);	//先往vector里补tmpFivePoints再赋值
 				}
 				LPLocBox[SelectedRow].a[2 * i] = (int)(int::Parse(StrPrePoints->Split('.')[i]->Split(',')[0]->Split('(')[1])*resizeFactor + wdiff);
@@ -199,7 +212,7 @@ namespace PointCheck {
 		// function5: Output modified items into D:\PointCheck+护眼版_Log\history.log
 		int OutHistory() {
 			// 若改动过且现在所有点都点满
-			while (ChangedOrNot.size()<SelectedRow + 1) {
+			while (ChangedOrNot.size() < SelectedRow + 1) {
 				ChangedOrNot.push_back(0);	//默认0
 			}
 			if (ChangedOrNot[SelectedRow] == 1 && LocNum[SelectedRow] == 5) {
@@ -250,7 +263,7 @@ namespace PointCheck {
 
 						// change the current path in listview1
 						String^ OldPath_item = listView1->Items[i]->SubItems[6]->Text;
-						String^ NewPath_item = "D:\\PointCheck+护眼版_Log\\output" + OldPath_item->Split('[')[0]->Split(':')[1] + 
+						String^ NewPath_item = "D:\\PointCheck+护眼版_Log\\output" + OldPath_item->Split('[')[0]->Split(':')[1] +
 							"[" + listView1->Items[i]->SubItems[5]->Text + "]" + OldPath_item->Split(']')[1];
 						listView1->Items[i]->SubItems[6]->Text = NewPath_item;
 
@@ -367,7 +380,7 @@ namespace PointCheck {
 		{
 			int i, j, c = 0;
 			for (i = 0, j = nvert - 1; i < nvert; j = i++) {
-				if (((verty[i]>testy) != (verty[j]>testy)) &&
+				if (((verty[i] > testy) != (verty[j] > testy)) &&
 					(testx < (vertx[j] - vertx[i]) * (testy - verty[i]) / (verty[j] - verty[i]) + vertx[i]))
 					c = !c;
 			}
@@ -386,6 +399,51 @@ namespace PointCheck {
 			m_ptCanvas.X = m_wdiff;
 			m_ptCanvas.Y = m_hdiff;
 			return 0;
+		}
+
+		// function11: rectObtain, 从五点数据中得到rect
+		cv::Rect rectObtain() 
+		{
+			int x_left = LPLoc[SelectedRow].a[0],
+				x_right = LPLoc[SelectedRow].a[0],
+				y_top = LPLoc[SelectedRow].a[1],
+				y_bottom = LPLoc[SelectedRow].a[1];
+			for (int i = 1; i < 5; i++) 
+			{
+				if (LPLoc[SelectedRow].a[2 * i] < x_left)
+					x_left = LPLoc[SelectedRow].a[2 * i];
+				if (LPLoc[SelectedRow].a[2 * i] > x_right)
+					x_right = LPLoc[SelectedRow].a[2 * i];
+				if (LPLoc[SelectedRow].a[2 * i + 1] < y_top)
+					y_top = LPLoc[SelectedRow].a[2 * i + 1];
+				if (LPLoc[SelectedRow].a[2 * i + 1] > y_bottom)
+					y_bottom = LPLoc[SelectedRow].a[2 * i + 1];
+			}
+			return cv::Rect(x_left, y_top, x_right - x_left, y_bottom - y_top);
+		}
+
+		// function12: infoRectAdapt,信息框位置根据车牌的位置自适应
+		infoRectResize infoRectAdapt(infoRectResize NumColor, cv::Rect rPB)
+		{
+			//自适应调整"信息框"的y坐标以及缩放系数dResizeFactorXY
+			if (NumColor.rectVehLpNumColor.y < 0)
+			{
+				NumColor.rectVehLpNumColor.y = 0;
+				NumColor.dResizeFactorXY = (double)rPB.y / (double)rPB.height;	//"信息框"缩放系数resizeFactor重新定义
+				NumColor.rectVehLpNumColor.width = rPB.width * NumColor.dResizeFactorXY;
+				NumColor.rectVehLpNumColor.height = rPB.height * NumColor.dResizeFactorXY;
+			}
+			//计算"信息框"的x坐标
+			NumColor.rectVehLpNumColor.x = rPB.x - (NumColor.rectVehLpNumColor.width - rPB.width) / 2;
+			if (NumColor.rectVehLpNumColor.x < 0)
+			{
+				NumColor.rectVehLpNumColor.x = 0;
+			}
+			else if (NumColor.rectVehLpNumColor.x > pictureBox1->Width)
+			{
+				NumColor.rectVehLpNumColor.x = pictureBox1->Width - NumColor.rectVehLpNumColor.width;
+			}
+			return NumColor;
 		}
 
 		//// function 11: LongestSubDir 求最长公共子路径
@@ -414,7 +472,10 @@ namespace PointCheck {
 		}
 
 
-
+	private: System::Windows::Forms::ColumnHeader^  columnHeader13;
+	private: System::Windows::Forms::Button^  button18;
+	private: System::Windows::Forms::Button^  button19;
+	private: System::Windows::Forms::Button^  button20;
 	private: System::Windows::Forms::ColumnHeader^  columnHeader12;
 	private: System::Windows::Forms::GroupBox^  groupBox7;
 	private: System::Windows::Forms::Button^  button17;
@@ -541,6 +602,8 @@ namespace PointCheck {
 			this->richTextBox3 = (gcnew System::Windows::Forms::RichTextBox());
 			this->button4 = (gcnew System::Windows::Forms::Button());
 			this->groupBox1 = (gcnew System::Windows::Forms::GroupBox());
+			this->button20 = (gcnew System::Windows::Forms::Button());
+			this->button19 = (gcnew System::Windows::Forms::Button());
 			this->button7 = (gcnew System::Windows::Forms::Button());
 			this->groupBox4 = (gcnew System::Windows::Forms::GroupBox());
 			this->button6 = (gcnew System::Windows::Forms::Button());
@@ -559,6 +622,7 @@ namespace PointCheck {
 			this->button9 = (gcnew System::Windows::Forms::Button());
 			this->button8 = (gcnew System::Windows::Forms::Button());
 			this->groupBox6 = (gcnew System::Windows::Forms::GroupBox());
+			this->button18 = (gcnew System::Windows::Forms::Button());
 			this->richTextBox10 = (gcnew System::Windows::Forms::RichTextBox());
 			this->groupBox7 = (gcnew System::Windows::Forms::GroupBox());
 			this->tabControl1->SuspendLayout();
@@ -633,7 +697,7 @@ namespace PointCheck {
 			this->tabPage2->Location = System::Drawing::Point(4, 22);
 			this->tabPage2->Name = L"tabPage2";
 			this->tabPage2->Padding = System::Windows::Forms::Padding(3);
-			this->tabPage2->Size = System::Drawing::Size(942, 821);
+			this->tabPage2->Size = System::Drawing::Size(944, 660);
 			this->tabPage2->TabIndex = 1;
 			this->tabPage2->Text = L"图片详情列表";
 			this->tabPage2->UseVisualStyleBackColor = true;
@@ -649,7 +713,7 @@ namespace PointCheck {
 			this->listView1->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->listView1->Location = System::Drawing::Point(3, 3);
 			this->listView1->Name = L"listView1";
-			this->listView1->Size = System::Drawing::Size(936, 815);
+			this->listView1->Size = System::Drawing::Size(938, 654);
 			this->listView1->TabIndex = 0;
 			this->listView1->UseCompatibleStateImageBehavior = false;
 			this->listView1->View = System::Windows::Forms::View::Details;
@@ -722,7 +786,7 @@ namespace PointCheck {
 			this->tabPage3->Controls->Add(this->richTextBox6);
 			this->tabPage3->Location = System::Drawing::Point(4, 22);
 			this->tabPage3->Name = L"tabPage3";
-			this->tabPage3->Size = System::Drawing::Size(942, 821);
+			this->tabPage3->Size = System::Drawing::Size(944, 660);
 			this->tabPage3->TabIndex = 2;
 			this->tabPage3->Text = L"使用帮助";
 			this->tabPage3->UseVisualStyleBackColor = true;
@@ -733,7 +797,7 @@ namespace PointCheck {
 			this->richTextBox6->Dock = System::Windows::Forms::DockStyle::Fill;
 			this->richTextBox6->Location = System::Drawing::Point(0, 0);
 			this->richTextBox6->Name = L"richTextBox6";
-			this->richTextBox6->Size = System::Drawing::Size(942, 821);
+			this->richTextBox6->Size = System::Drawing::Size(944, 660);
 			this->richTextBox6->TabIndex = 0;
 			this->richTextBox6->Text = resources->GetString(L"richTextBox6.Text");
 			// 
@@ -943,7 +1007,7 @@ namespace PointCheck {
 			this->button2->Location = System::Drawing::Point(55, 16);
 			this->button2->Margin = System::Windows::Forms::Padding(2);
 			this->button2->Name = L"button2";
-			this->button2->Size = System::Drawing::Size(452, 32);
+			this->button2->Size = System::Drawing::Size(328, 32);
 			this->button2->TabIndex = 1;
 			this->button2->Text = L"从.set导入";
 			this->button2->UseVisualStyleBackColor = true;
@@ -1023,13 +1087,36 @@ namespace PointCheck {
 			// groupBox1
 			// 
 			this->groupBox1->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox1->Controls->Add(this->button20);
+			this->groupBox1->Controls->Add(this->button19);
 			this->groupBox1->Controls->Add(this->button7);
-			this->groupBox1->Location = System::Drawing::Point(545, 12);
+			this->groupBox1->Location = System::Drawing::Point(415, 12);
 			this->groupBox1->Name = L"groupBox1";
-			this->groupBox1->Size = System::Drawing::Size(192, 70);
+			this->groupBox1->Size = System::Drawing::Size(322, 70);
 			this->groupBox1->TabIndex = 4;
 			this->groupBox1->TabStop = false;
 			this->groupBox1->Text = L"附加功能";
+			// 
+			// button20
+			// 
+			this->button20->Enabled = false;
+			this->button20->Location = System::Drawing::Point(249, 18);
+			this->button20->Name = L"button20";
+			this->button20->Size = System::Drawing::Size(67, 37);
+			this->button20->TabIndex = 7;
+			this->button20->Text = L"显示小图(F4)";
+			this->button20->UseVisualStyleBackColor = true;
+			this->button20->Click += gcnew System::EventHandler(this, &MyForm::button20_Click);
+			// 
+			// button19
+			// 
+			this->button19->Location = System::Drawing::Point(177, 18);
+			this->button19->Name = L"button19";
+			this->button19->Size = System::Drawing::Size(67, 37);
+			this->button19->TabIndex = 6;
+			this->button19->Text = L"取消5点(Esc)";
+			this->button19->UseVisualStyleBackColor = true;
+			this->button19->Click += gcnew System::EventHandler(this, &MyForm::button19_Click);
 			// 
 			// button7
 			// 
@@ -1213,6 +1300,7 @@ namespace PointCheck {
 			// groupBox6
 			// 
 			this->groupBox6->Anchor = static_cast<System::Windows::Forms::AnchorStyles>((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Right));
+			this->groupBox6->Controls->Add(this->button18);
 			this->groupBox6->Controls->Add(this->richTextBox10);
 			this->groupBox6->Location = System::Drawing::Point(970, 262);
 			this->groupBox6->Name = L"groupBox6";
@@ -1220,6 +1308,16 @@ namespace PointCheck {
 			this->groupBox6->TabIndex = 7;
 			this->groupBox6->TabStop = false;
 			this->groupBox6->Text = L"车牌号码设置(离开当前图片会自动确认）";
+			// 
+			// button18
+			// 
+			this->button18->Location = System::Drawing::Point(157, 20);
+			this->button18->Name = L"button18";
+			this->button18->Size = System::Drawing::Size(48, 46);
+			this->button18->TabIndex = 16;
+			this->button18->Text = L"未知(F3)";
+			this->button18->UseVisualStyleBackColor = true;
+			this->button18->Click += gcnew System::EventHandler(this, &MyForm::button18_Click);
 			// 
 			// richTextBox10
 			// 
@@ -1230,7 +1328,7 @@ namespace PointCheck {
 			this->richTextBox10->MaxLength = 16;
 			this->richTextBox10->Multiline = false;
 			this->richTextBox10->Name = L"richTextBox10";
-			this->richTextBox10->Size = System::Drawing::Size(173, 26);
+			this->richTextBox10->Size = System::Drawing::Size(136, 26);
 			this->richTextBox10->TabIndex = 15;
 			this->richTextBox10->Text = L"1234567";
 			this->richTextBox10->KeyDown += gcnew System::Windows::Forms::KeyEventHandler(this, &MyForm::richTextBox10_KeyDown);
@@ -1241,7 +1339,7 @@ namespace PointCheck {
 			this->groupBox7->Controls->Add(this->button1);
 			this->groupBox7->Location = System::Drawing::Point(12, 12);
 			this->groupBox7->Name = L"groupBox7";
-			this->groupBox7->Size = System::Drawing::Size(512, 55);
+			this->groupBox7->Size = System::Drawing::Size(397, 55);
 			this->groupBox7->TabIndex = 8;
 			this->groupBox7->TabStop = false;
 			this->groupBox7->Text = L"预处理";
@@ -1308,6 +1406,7 @@ namespace PointCheck {
 			richTextBox5->Text = "";	//当前预检显示清空
 		}
 		button2->Enabled = true;	//清空后才能继续导入.set
+		button20->Enabled = false;	//清空图片后不能切换图片大小
 	}
 
 
@@ -1332,6 +1431,8 @@ namespace PointCheck {
 				MessageBox::Show("该.set中的图片文件路径不存在！");
 				return;
 			}
+
+			button20->Enabled = true;	//导入图片后才能切换图片大小
 
 			//创建历史记录目录
 			if (!Directory::Exists("D:\\PointCheck+护眼版_Log")) {
@@ -1436,15 +1537,16 @@ namespace PointCheck {
 				Console::WriteLine(e->Message);
 			}
 
-			// Show img in pictureBox1
-			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
-				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
-			pictureBox1->Refresh();
-
 			richTextBox7->Text = listView1->Items[0]->SubItems[10]->Text;	// 显示颜色
 			richTextBox8->Text = listView1->Items[0]->SubItems[11]->Text;	// 显示类型
 			richTextBox9->Text = listView1->Items[0]->SubItems[9]->Text;	// 显示车牌号码
 			richTextBox10->Text = listView1->Items[0]->SubItems[9]->Text;	// 显示车牌号码
+
+			// Show img in pictureBox1
+			img_cur = img;
+			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+			pictureBox1->Refresh();
 
 																			// MessageBox mention richTextBox5 content
 			if (richTextBox5->Text == "错") {
@@ -1455,6 +1557,7 @@ namespace PointCheck {
 			}
 			// Draw points on picture
 
+
 			sr->Close(); // 关闭streamreader，释放.set
 		}//end of openfile dialog
 	}
@@ -1464,9 +1567,11 @@ namespace PointCheck {
 			 //上一帧执行的功能
 	private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		//richTextBox10 两端去空格
+		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
 			listView1->Items[SelectedRow]->SubItems[9]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
-			while (ChangedOrNot.size()<SelectedRow + 1) {
+			while (ChangedOrNot.size() < SelectedRow + 1) {
 				ChangedOrNot.push_back(0);	//默认0
 			}
 			ChangedOrNot[SelectedRow] = 1;
@@ -1509,8 +1614,34 @@ namespace PointCheck {
 			}
 
 			// Show img_small in pictureBox1
-			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
-				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+			if (imgFull)
+			{//显示原始图像
+				img_cur = img;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+			}
+			//else if (imgPartUP)
+			//{
+			//	//显示上半部分图像
+			//	CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), cvRect(0, 0, img->width, img->height / 2));
+			//	img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+			//	imgcur = img_part;
+			//	pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+			//		System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+			//}
+			else
+			{
+				//显示下半部分图像
+				CvRect rect = cvRect(0, img->height / 2, img->width, img->height / 2);
+				CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), rect);
+				img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+				img_cur = img_part;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+			}
+
+			//pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+			//	System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 			pictureBox1->Refresh();
 
 			richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[10]->Text;	// 显示颜色
@@ -1530,9 +1661,11 @@ namespace PointCheck {
 			 //下一帧执行的功能
 	private: System::Void button4_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		//richTextBox10 两端去空格
+		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
 			listView1->Items[SelectedRow]->SubItems[9]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
-			while (ChangedOrNot.size()<SelectedRow + 1) {
+			while (ChangedOrNot.size() < SelectedRow + 1) {
 				ChangedOrNot.push_back(0);	//默认0
 			}
 			ChangedOrNot[SelectedRow] = 1;
@@ -1575,8 +1708,34 @@ namespace PointCheck {
 				listView1->Items[SelectedRow]->SubItems[3]->Text = img->width.ToString() + "*" + img->height.ToString();
 			}
 			// Show img in pictureBox1
-			pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
-				System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+
+			if (imgFull)
+			{//显示原始图像
+				img_cur = img;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+			}
+			//else if (imgPartUP)
+			//{
+			//	//显示上半部分图像
+			//	CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), cvRect(0, 0, img->width, img->height / 2));
+			//	img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+			//	imgcur = img_part;
+			//	pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+			//		System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+			//}
+			else
+			{
+				//显示下半部分图像
+				CvRect rect = cvRect(0, img->height / 2, img->width, img->height / 2);
+				CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), rect);
+				img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+				img_cur = img_part;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+			}
+			//pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+			//	System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 			pictureBox1->Refresh();
 
 			richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[10]->Text;	// 显示颜色
@@ -1596,9 +1755,11 @@ namespace PointCheck {
 			 //跳帧键执行的功能
 	private: System::Void button5_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		//richTextBox10 两端去空格
+		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
 			listView1->Items[SelectedRow]->SubItems[9]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
-			while (ChangedOrNot.size()<SelectedRow + 1) {
+			while (ChangedOrNot.size() < SelectedRow + 1) {
 				ChangedOrNot.push_back(0);	//默认0
 			}
 			ChangedOrNot[SelectedRow] = 1;
@@ -1611,7 +1772,7 @@ namespace PointCheck {
 			MessageBox::Show("未导入图片！");
 		}
 		else {
-			if (jumpCount == (int)jumpCount && jumpCount>0 && jumpCount <= PicCount) {
+			if (jumpCount == (int)jumpCount && jumpCount > 0 && jumpCount <= PicCount) {
 				if (LocNum[SelectedRow] != 5) { //当前图片开始标注但未标注完（标注点数1~4）
 					MessageBox::Show("请在 点完5个点 的情况下切换帧！");
 				}
@@ -1647,8 +1808,33 @@ namespace PointCheck {
 					}
 
 					// Show img in pictureBox1
-					pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
-						System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+					if (imgFull)
+					{//显示原始图像
+						img_cur = img;
+						pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+					}
+					//else if (imgPartUP)
+					//{
+					//	//显示上半部分图像
+					//	CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), cvRect(0, 0, img->width, img->height / 2));
+					//	img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+					//	imgcur = img_part;
+					//	pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+					//		System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+					//}
+					else
+					{
+						//显示下半部分图像
+						CvRect rect = cvRect(0, img->height / 2, img->width, img->height / 2);
+						CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), rect);
+						img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+						img_cur = img_part;
+						pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+							System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+					}
+					//pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+					//	System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
 					pictureBox1->Refresh();
 
 					richTextBox7->Text = listView1->Items[SelectedRow]->SubItems[10]->Text;	// 显示颜色
@@ -1905,14 +2091,156 @@ namespace PointCheck {
 												// 画关键点
 			SolidBrush^ RedBrush = gcnew SolidBrush(Color::Red);	// Create a new pen 
 			int CircleWidth = 8;
-			for (int m = 0; m < LocNum[SelectedRow]; m++) {
-				e->Graphics->FillEllipse(RedBrush, (int)LPLocBox[SelectedRow].a[2 * m] - CircleWidth / 2,
-					(int)LPLocBox[SelectedRow].a[2 * m + 1] - CircleWidth / 2, CircleWidth, CircleWidth);
-				//e->Graphics->FillEllipse(RedBrush, (int)LPLocBox->GetValue(SelectedRow, 2 * m) - CircleWidth / 2,
-				//	(int)LPLocBox->GetValue(SelectedRow, 2 * m + 1) - CircleWidth / 2, CircleWidth, CircleWidth);
+
+			double radius = CircleWidth/2;
+
+			double wfactor = (double)img_cur->width / pictureBox1->ClientSize.Width;
+			double hfactor = (double)img_cur->height / pictureBox1->ClientSize.Height;
+			double resizeFactor = 1 / Math::Max(wfactor, hfactor);
+			double wdiff = (pictureBox1->ClientSize.Width - (double)img_cur->width*resizeFactor) / 2;
+			double hdiff = (pictureBox1->ClientSize.Height - (double)img_cur->height*resizeFactor) / 2;
+
+			rectLpOri = rectObtain();	//根据5点获取bbox的rect坐标
+
+			//计算缩放后的车牌rect
+			rectPicBox.x = 0;
+			rectPicBox.y = 0;
+			rectPicBox.width = rectLpOri.width * resizeFactor;
+			rectPicBox.height = rectLpOri.height *resizeFactor;
+
+			//关键点显示部分
+			int picX = 0;
+			int picY = 0;
+			if (imgFull)
+			{//显示原始图像上的关键点
+				for (int m = 0; m < LocNum[SelectedRow]; m++)
+				{
+					picX = LPLoc[SelectedRow].a[2 * m] * resizeFactor + wdiff - radius;
+					picY = (LPLoc[SelectedRow].a[2 * m + 1]) * resizeFactor + hdiff - radius;
+					e->Graphics->FillEllipse(RedBrush, picX, picY, CircleWidth, CircleWidth);
+
+					rectPicBox.x = rectLpOri.x * resizeFactor + wdiff;
+					rectPicBox.y = rectLpOri.y * resizeFactor + hdiff;
+
+					//e->Graphics->FillEllipse(RedBrush, (int)LPLocBox[SelectedRow].a[2 * m] - radius,
+					//	(int)LPLocBox[SelectedRow].a[2 * m + 1] - radius, CircleWidth, CircleWidth);
+				}
 			}
-			//delete RedBrush;	//Dispose of the pen.
+			//else if (imgPartUP)
+			//{//显示图像上半部的关键点
+
+			//	for (int m = 0; m < LocNum[SelectedRow]; m++)
+			//	{
+			//		x = (int)LPLoc[SelectedRow].a[2 * m] * resizeFactor + wdiff - radius;
+			//		y = (int)((LPLoc[SelectedRow].a[2 * m + 1]) * resizeFactor + hdiff - radius);
+			//		x = (int)LPLoc[SelectedRow].a[2 * m] - radius;
+			//		y = (int)LPLoc[SelectedRow].a[2 * m + 1] - radius;
+			//		e->Graphics->FillEllipse(RedBrush, x, y, CircleWidth, CircleWidth);
+			//	}
+			//}
+			else
+			{//显示图像下半部的关键点
+				for (int m = 0; m < LocNum[SelectedRow]; m++)
+				{
+					picX = LPLoc[SelectedRow].a[2 * m] * resizeFactor + wdiff - radius;
+					picY = ((LPLoc[SelectedRow].a[2 * m + 1]) * resizeFactor - (double)(img->height)*resizeFactor / 2 + hdiff - radius);
+					//printf("picY: %d", picY);
+					e->Graphics->FillEllipse(RedBrush, picX, picY, CircleWidth, CircleWidth);
+
+					rectPicBox.x = rectLpOri.x * resizeFactor + wdiff;
+					rectPicBox.y = rectLpOri.y * resizeFactor - (double)(img->height)*resizeFactor / 2 + hdiff;
+
+				}
+			}
+
+
+			//车牌颜色和字符的"信息框"(即底色为车牌颜色，上面有车牌号)bitmap重绘部分
+			//step1:根据原车牌rect得到缩放过后的rect
+			infoRectResize rectVehLPinfo;
+			rectVehLPinfo.dResizeFactorXY = 2;
+
+			//"信息框":车牌数字和颜色
+			rectVehLPinfo.rectVehLpNumColor.x = 0;
+			rectVehLPinfo.rectVehLpNumColor.y = 0;
+			rectVehLPinfo.rectVehLpNumColor.width = rectPicBox.width * rectVehLPinfo.dResizeFactorXY;
+			rectVehLPinfo.rectVehLpNumColor.height = rectPicBox.height * rectVehLPinfo.dResizeFactorXY;
+
+			printf("picturebox1->height:  %d    rectPicBox.y: %d  rectPicBox.height: %d   rectVehLpNumColor.height: %d \n", 
+				pictureBox1->Height, rectPicBox.y, rectPicBox.height, rectVehLPinfo.rectVehLpNumColor.height);
+
+			//自适应"信息框"的位置
+			if(rectPicBox.y + rectPicBox.height /2<=pictureBox1->Height/2)	//如果车牌位置偏上
+			{
+				printf("上\n");
+				rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y + rectPicBox.height + 0.2* rectPicBox.height ;	//显示在车牌下方（0.2*显示的车牌高度）处
+				rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
+			}
+			else	//车牌位置偏下
+			{
+				printf("下\n");
+				rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y - rectVehLPinfo.rectVehLpNumColor.height - 0.2* rectPicBox.height;	//显示在车牌上方（0.2*显示的车牌高度）处
+				rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
+			}
+			
+			SolidBrush^ infoBrush;
+			SolidBrush ^ numBrush = gcnew SolidBrush(Color::Red);
+			String^ colorString = listView1->Items[SelectedRow]->SubItems[10]->Text;
+			if (colorString == "未知" || colorString == "") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Gray));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::White);	// Create a new pen 
+			}
+			else if (colorString == "白") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::White));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::Black);	// Create a new pen 
+			}
+			else if (colorString == "黑") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Black));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::Blue);	// Create a new pen 
+			}
+			else if (colorString == "蓝") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Blue));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::Yellow);	// Create a new pen 
+			}
+			else if (colorString == "黄") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Yellow));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::Green);	// Create a new pen 
+			}
+			else if (colorString == "绿") {
+				infoBrush = gcnew SolidBrush(Color::FromArgb(200,Color::Green));	// Create a new pen 
+				//numBrush = gcnew SolidBrush(Color::Gray);	// Create a new pen 
+			}
+			e->Graphics->FillRectangle(infoBrush, rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
+				rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
+			
+
+			String^ numberString = listView1->Items[SelectedRow]->SubItems[9]->Text;
+			System::Drawing::Font^ arial16 = gcnew System::Drawing::Font("Arial",25);
+			System::Drawing::RectangleF rectBrush = System::Drawing::RectangleF(rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
+				rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
+			e->Graphics->DrawString(numberString, arial16, numBrush, rectBrush);
+
+			//if (listView1->Items[SelectedRow]->SubItems[10]->Text == "假(虚警)" || listView1->Items[SelectedRow]->SubItems[10]->Text == "单层")
+			//{
+
+			//}
+			//else 
+			//{
+
+			//}
+
+			//for (int r = 0; r < 4; r++) 
+			//{
+
+			//}
+
+
+			//for (int m = 0; m < LocNum[SelectedRow]; m++) {
+			//	e->Graphics->FillEllipse(RedBrush, (int)LPLocBox[SelectedRow].a[2 * m] - CircleWidth / 2,
+			//		(int)LPLocBox[SelectedRow].a[2 * m + 1] - CircleWidth / 2, CircleWidth, CircleWidth);
+			//	//e->Graphics->FillEllipse(RedBrush, (int)LPLocBox->GetValue(SelectedRow, 2 * m) - CircleWidth / 2,
+			//	//	(int)LPLocBox->GetValue(SelectedRow, 2 * m + 1) - CircleWidth / 2, CircleWidth, CircleWidth);
 		}
+		//delete RedBrush;	//Dispose of the pen.
 	}
 
 
@@ -1929,16 +2257,16 @@ namespace PointCheck {
 		if (pictureBox1->Image) {
 
 			//Compute the of license plate location
-			double wfactor = (double)img->width / pictureBox1->ClientSize.Width;
-			double hfactor = (double)img->height / pictureBox1->ClientSize.Height;
+			double wfactor = (double)img_cur->width / pictureBox1->ClientSize.Width;
+			double hfactor = (double)img_cur->height / pictureBox1->ClientSize.Height;
 			double resizeFactor = 1 / Math::Max(wfactor, hfactor);
-			double wdiff = (pictureBox1->ClientSize.Width - (double)img->width*resizeFactor) / 2;
-			double hdiff = (pictureBox1->ClientSize.Height - (double)img->height*resizeFactor) / 2;
+			double wdiff = (pictureBox1->ClientSize.Width - (double)img_cur->width*resizeFactor) / 2;
+			double hdiff = (pictureBox1->ClientSize.Height - (double)img_cur->height*resizeFactor) / 2;
 
 			//Convert screen mouse location to pictureBox1 mouse location
 			Point^ tmpPoint = pictureBox1->PointToClient(Control::MousePosition);
 			if (Math::Max(wfactor, hfactor) == wfactor) {
-				if (tmpPoint->Y<hdiff || tmpPoint->Y>(hdiff + (double)img->height*resizeFactor)) {
+				if (tmpPoint->Y<hdiff || tmpPoint->Y>(hdiff + (double)img_cur->height*resizeFactor)) {
 					MessageBox::Show("请在图片高度范围内画点！");
 				}
 				else {	//在图片范围之内 
@@ -1949,6 +2277,13 @@ namespace PointCheck {
 							// Save the Original point location
 							tmpLocX = tmpPoint->X*wfactor;
 							tmpLocY = (tmpPoint->Y - hdiff)*wfactor;
+
+							//如果此时未下半部分图像显示模式，则需要img->height / 2
+							if (imgPartBottom)
+							{
+								tmpLocY = tmpLocY + img->height / 2;
+							}
+
 							LPLoc[SelectedRow].a[2 * LocNum[SelectedRow]] = tmpLocX;
 							LPLoc[SelectedRow].a[2 * LocNum[SelectedRow] + 1] = tmpLocY;
 							//LPLoc->SetValue(tmpLocX, SelectedRow, 2 * LocNum[SelectedRow]); //change value of x
@@ -1961,6 +2296,9 @@ namespace PointCheck {
 							LPLocBox[SelectedRow].a[2 * (LocNum[SelectedRow] - 1) + 1] = tmpPoint->Y;
 							//LPLocBox->SetValue(tmpPoint->X, SelectedRow, 2 * (LocNum[SelectedRow] - 1));
 							//LPLocBox->SetValue(tmpPoint->Y, SelectedRow, 2 * (LocNum[SelectedRow] - 1) + 1);
+							while (ChangedOrNot.size() < SelectedRow + 1) {
+								ChangedOrNot.push_back(0);	//默认0
+							}
 							ChangedOrNot[SelectedRow] = 1;//标注图片改动
 							pictureBox1->Invalidate();
 						}
@@ -1984,6 +2322,9 @@ namespace PointCheck {
 							}
 							listView1->Items[SelectedRow]->SubItems[5]->Text = tmpText;
 							LocNum[SelectedRow]--;
+							while (ChangedOrNot.size() < SelectedRow + 1) {
+								ChangedOrNot.push_back(0);	//默认0
+							}
 							ChangedOrNot[SelectedRow] = 1;//标注图片改动
 						}
 						else {
@@ -2003,6 +2344,13 @@ namespace PointCheck {
 							//MessageBox::Show("sfg");
 							tmpLocX = (tmpPoint->X - wdiff)*hfactor;
 							tmpLocY = tmpPoint->Y*hfactor;
+
+							//如果此时未下半部分图像显示模式，则需要img->height / 2
+							if (imgPartBottom)
+							{
+								tmpLocY = tmpLocY + img->height / 2;
+							}
+
 							LPLoc[SelectedRow].a[2 * LocNum[SelectedRow]] = tmpLocX;
 							LPLoc[SelectedRow].a[2 * LocNum[SelectedRow] + 1] = tmpLocY;
 							//LPLoc->SetValue(tmpLocX, SelectedRow, 2 * LocNum[SelectedRow]); //change value of x
@@ -2015,7 +2363,7 @@ namespace PointCheck {
 							LPLocBox[SelectedRow].a[2 * (LocNum[SelectedRow] - 1) + 1] = tmpPoint->Y;
 							//LPLocBox->SetValue(tmpPoint->X, SelectedRow, 2 * (LocNum[SelectedRow] - 1));
 							//LPLocBox->SetValue(tmpPoint->Y, SelectedRow, 2 * (LocNum[SelectedRow] - 1) + 1);
-							while (ChangedOrNot.size()<SelectedRow + 1) {
+							while (ChangedOrNot.size() < SelectedRow + 1) {
 								ChangedOrNot.push_back(0);	//默认0
 							}
 							ChangedOrNot[SelectedRow] = 1;//标注图片改动
@@ -2040,7 +2388,7 @@ namespace PointCheck {
 							}
 							listView1->Items[SelectedRow]->SubItems[5]->Text = tmpText;
 							LocNum[SelectedRow]--;
-							while (ChangedOrNot.size()<SelectedRow + 1) {
+							while (ChangedOrNot.size() < SelectedRow + 1) {
 								ChangedOrNot.push_back(0);	//默认0
 							}
 							ChangedOrNot[SelectedRow] = 1;//标注图片改动
@@ -2168,16 +2516,20 @@ namespace PointCheck {
 			}
 		}
 		if (File::Exists("D:\\PointCheck+护眼版_Log\\historyNAN.log")) {
-			if(FileInfo("D:\\PointCheck+护眼版_Log\\historyNAN.log").Length <= 2 && File::Exists("D:\\PointCheck+护眼版_Log\\backup\\historyNAN.log")) {
+			if (FileInfo("D:\\PointCheck+护眼版_Log\\historyNAN.log").Length <= 2 && File::Exists("D:\\PointCheck+护眼版_Log\\backup\\historyNAN.log")) {
 				File::Copy("D:\\PointCheck+护眼版_Log\\backup\\historyNAN.log", "D:\\PointCheck+护眼版_Log\\historyNAN.log", true);
 			}
-		} 
+		}
 
 	}
 
 
 			 // actions when MyForm Closing
 	private: System::Void MyForm_FormClosing(System::Object^  sender, System::Windows::Forms::FormClosingEventArgs^  e) {
+		//if (MessageBox::Show("是否保存修改结果？", "Confirm Message", System::Windows::Forms::MessageBoxButtons::OKCancel) == System::Windows::Forms::DialogResult::OK)
+		//{
+		//	button6_Click(sender, e);
+		//}
 		button6_Click(sender, e); //模拟点击保存history.log中图片按键
 								  //MessageBox::Show("未识别图片已保存在D:\\PointCheck+护眼版_Log\\NanImg\\，请查收！");
 	}
@@ -2204,6 +2556,18 @@ namespace PointCheck {
 			button4->Focus();
 			button4_Click(sender, e); //simulate keydown of button 4 下一帧
 		}
+		else if (e->KeyCode == Keys::F3) {
+			button18->Focus();
+			button18_Click(sender, e);
+		}
+		else if (e->KeyCode == Keys::Escape) {
+			button19->Focus();
+			button19_Click(sender, e);
+		}
+		else if (e->KeyCode == Keys::F4) {
+			button20->Focus();
+			button20_Click(sender, e);
+		}
 	}
 
 
@@ -2214,7 +2578,7 @@ namespace PointCheck {
 			// 保存改动到listview，history.log
 			if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text) {	// 如果有改动
 				listView1->Items[SelectedRow]->SubItems[9]->Text = richTextBox10->Text;	// 执行之前把当前帧的车牌号码存入listview中
-				while (ChangedOrNot.size()<SelectedRow + 1) {
+				while (ChangedOrNot.size() < SelectedRow + 1) {
 					ChangedOrNot.push_back(0);	//默认0
 				}
 				ChangedOrNot[SelectedRow] = 1;
@@ -2245,7 +2609,7 @@ namespace PointCheck {
 	private: System::Void button8_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "黑";
 		richTextBox7->Text = "黑";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2254,7 +2618,7 @@ namespace PointCheck {
 	private: System::Void button9_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "白";
 		richTextBox7->Text = "白";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2263,7 +2627,7 @@ namespace PointCheck {
 	private: System::Void button10_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "蓝";
 		richTextBox7->Text = "蓝";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2272,7 +2636,7 @@ namespace PointCheck {
 	private: System::Void button11_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "黄";
 		richTextBox7->Text = "黄";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2281,7 +2645,7 @@ namespace PointCheck {
 	private: System::Void button12_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "未知";
 		richTextBox7->Text = "未知";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2290,7 +2654,7 @@ namespace PointCheck {
 	private: System::Void button17_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[10]->Text = "绿";
 		richTextBox7->Text = "绿";	// 显示颜色
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2305,7 +2669,7 @@ namespace PointCheck {
 	private: System::Void button13_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[11]->Text = "单层";
 		richTextBox8->Text = "单层";	// 显示类型
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2314,7 +2678,7 @@ namespace PointCheck {
 	private: System::Void button14_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[11]->Text = "双层";
 		richTextBox8->Text = "双层";	// 显示类型
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2323,7 +2687,7 @@ namespace PointCheck {
 	private: System::Void button15_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[11]->Text = "假(虚警)";
 		richTextBox8->Text = "假(虚警)";	// 显示类型
-		while (ChangedOrNot.size()<SelectedRow + 1) {
+		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
 		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
@@ -2333,6 +2697,92 @@ namespace PointCheck {
 
 
 
+			 //车牌号码设为1234567
+	private: System::Void button18_Click(System::Object^  sender, System::EventArgs^  e) {
+		listView1->Items[SelectedRow]->SubItems[9]->Text = "1234567";
+		richTextBox10->Text = "1234567";
+		while (ChangedOrNot.size() < SelectedRow + 1) {
+			ChangedOrNot.push_back(0);	//默认0
+		}
+		ChangedOrNot[SelectedRow] = 1;	// 标注图片改动
+		OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+	}
+
+
+
+			 //一次取消5个点
+	private: System::Void button19_Click(System::Object^  sender, System::EventArgs^  e) {
+		//没法直接模拟右键点击，因为鼠标不一定在picturebox1内部
+		pictureBox1->Focus();
+		if (pictureBox1->Image) {
+			//draw the point
+			pictureBox1->Invalidate();
+			//save the point location
+			while (LocNum[SelectedRow] > 0) {
+				LPLoc[SelectedRow].a[2 * (LocNum[SelectedRow] - 1)] = 0;
+				LPLoc[SelectedRow].a[2 * (LocNum[SelectedRow] - 1) + 1] = 0;
+				//LPLoc->SetValue(nullptr, SelectedRow, 2 * (LocNum[SelectedRow] - 1));//change value of x
+				//LPLoc->SetValue(nullptr, SelectedRow, 2 * (LocNum[SelectedRow] - 1) + 1);//change value of y
+				String^ tmpText = "";
+				for (int j = 0; j < LocNum[SelectedRow] - 1; j++) {
+					tmpText += listView1->Items[SelectedRow]->SubItems[5]->Text->Split('.')[j] + ".";
+				}
+				listView1->Items[SelectedRow]->SubItems[5]->Text = tmpText;
+				LocNum[SelectedRow]--;
+				while (ChangedOrNot.size() < SelectedRow + 1) {
+					ChangedOrNot.push_back(0);	//默认0
+				}
+				ChangedOrNot[SelectedRow] = 1;//标注图片改动
+			}
+			//else {
+			//	MessageBox::Show("已没有点可以取消！");
+			//}
+			richTextBox2->Text = LocNum[SelectedRow].ToString();
+
+			OutHistory();	//检查、输出到history.log并更新listview和richTextBox
+		}	//end of picturebox1->image exists
+	}
+
+
+
+			 //实现大小屏切换功能
+#pragma  region ImgShow
+
+	private: System::Void button20_Click(System::Object^  sender, System::EventArgs^  e) {
+		//Step 1: 切换按钮显示内容，修改picturebox1的图片显示
+		if (button20->Text == "显示小图(F4)")
+		{
+			if (img != NULL)
+			{
+				//显示下半部分图像
+				CvRect rect = cvRect(0, img->height / 2, img->width, img->height / 2);
+				CvMat *pMat = cvGetSubRect(img, cvCreateMatHeader(img->height / 2, img->width, CV_8UC3), rect);
+				img_part = cvGetImage(pMat, cvCreateImageHeader(cvSize(img->width, img->height / 2), CV_8UC3, 3));
+				img_cur = img_part;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img_part->width, img_part->height, img_part->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img_part->imageData);
+			}
+			imgPartBottom = true;
+			imgFull = false;
+			button20->Text = "显示原图(F4)";
+		}
+		else if (button20->Text == "显示原图(F4)")
+		{
+			if (img != NULL)
+			{//显示原始图像
+				img_cur = img;
+				pictureBox1->Image = gcnew System::Drawing::Bitmap(img->width, img->height, img->widthStep,
+					System::Drawing::Imaging::PixelFormat::Format24bppRgb, (System::IntPtr) img->imageData);
+			}
+			imgFull = true;
+			imgPartBottom = false;
+			button20->Text = "显示小图(F4)";
+		}
+
+		pictureBox1->Refresh();
+
+	}
+#pragma endregion
 
 	};// end of public ref class MyForm : public System::Windows::Forms::Form
 }// end of namespace PointCheck
