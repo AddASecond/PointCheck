@@ -1,5 +1,5 @@
 #include "MyForm.h"
-#include "Ver.h"
+#include "ver_vas.h"
 
 using namespace PointCheck;//使用MyForm.h中定义的命名空间
 
@@ -7,7 +7,7 @@ using namespace PointCheck;//使用MyForm.h中定义的命名空间
 
 int main(array<System::String^>^args) 
 {
-	if (!VerifyAuthorityVasTest())
+	if (!VerifyAuthorityVasTest(2017,4,24,365))
 	{
 		printf("Please get your license............\n");
 		return 1;

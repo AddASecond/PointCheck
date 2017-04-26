@@ -41,7 +41,7 @@ namespace PointCheck {
 	std::vector<int> LocNum;	//to memory the number of painted points in each image
 	std::vector<int>::iterator LocNum_iter;
 	std::vector<int> ChangedOrNot;	//记录这次挑图那些图更改了，更改为1
-	std::vector<int>::iterator ChangedOrNot_iter;
+	//std::vector<int>::iterator ChangedOrNot_iter;
 
 	// Struct for paths
 	typedef struct PathsSet {
@@ -250,8 +250,9 @@ namespace PointCheck {
 							listView1->Items[i]->SubItems[7]->Text->ToString() + " " + 				//原图片名称
 							listView1->Items[i]->SubItems[5]->Text->ToString() + " " +	            //图片新关键点位置
 							listView1->Items[i]->SubItems[9]->Text->ToString() + " " +              //车牌号码
-							listView1->Items[i]->SubItems[10]->Text->ToString() + " " +              //图片颜色
-							listView1->Items[i]->SubItems[11]->Text->ToString();                    //图片类型
+							listView1->Items[i]->SubItems[10]->Text->ToString() + " " +             //图片颜色
+							listView1->Items[i]->SubItems[11]->Text->ToString() + " " +             //图片类型
+							listView1->Items[i]->SubItems[12]->Text->ToString();                    //bbox位置
 						if (listView1->Items[i]->SubItems[9]->Text != "1234567") {	//若不是1234567（已识别）则存入history.log
 							tmphistory->WriteLine(OneLine);
 							tmphistory->Flush();	//	清空缓冲并写入流							
@@ -263,8 +264,15 @@ namespace PointCheck {
 
 						// change the current path in listview1
 						String^ OldPath_item = listView1->Items[i]->SubItems[6]->Text;
-						String^ NewPath_item = "D:\\PointCheck+护眼版_Log\\output" + OldPath_item->Split('[')[0]->Split(':')[1] +
+						//String^ NewPath_item = "D:\\PointCheck+护眼版_Log\\output" + OldPath_item->Split('[')[0]->Split(':')[1] +
+						//	"[" + listView1->Items[i]->SubItems[5]->Text + "]" + OldPath_item->Split(']')[1];
+						int iOldLength = OldPath_item->Split('\\')->Length;
+						String^ OldPath_item_directory = OldPath_item->Substring(0, OldPath_item->LastIndexOf('\\')+1);
+						String^ OldPath_item_imgpath = OldPath_item->Substring(OldPath_item->LastIndexOf('\\')+1);
+						String^ NewPath_item = OldPath_item_directory + OldPath_item_imgpath->Split('[')[0]->Split('#')[0] + "#" +
+							listView1->Items[i]->SubItems[12]->Text + "#" + "_" +
 							"[" + listView1->Items[i]->SubItems[5]->Text + "]" + OldPath_item->Split(']')[1];
+						Console::WriteLine(NewPath_item);
 						listView1->Items[i]->SubItems[6]->Text = NewPath_item;
 
 						// refresh the PreflightCheck in listview and richTextBox5
@@ -445,6 +453,75 @@ namespace PointCheck {
 			}
 			return NumColor;
 		}
+
+		// function13: 根据"手工标的5点"和"原有ssd框"得到输出的"新框"
+		cv::Rect ssdRectUpdate(FivePoints annotatedPoints, cv::Rect ssdRect, int imgWidth, int imgHeight)
+		{
+			////step 1: 根据5点求外切框
+			//cv::Rect fivePointsRect = rectObtain();	//默认是当前行的框			
+			////step 2: 判断5点框是否在ssd框内
+
+			//step 1: 判断5点中前4点是否都在ssd框内,是则不更新框，否则更新为五点外切框
+			int x_right = ssdRect.x + ssdRect.width;
+			int y_bottom = ssdRect.y + ssdRect.height;
+			bool inSsdRect = true;
+			for (int i = 0; i < 4; i++) 
+			{
+				cv::Point tmpCvPoint = (annotatedPoints.a[2 * i], annotatedPoints.a[2 * i + 1]);
+				if (tmpCvPoint.x<ssdRect.x || tmpCvPoint.x>x_right || tmpCvPoint.y<ssdRect.y || tmpCvPoint.y>y_bottom)
+				{
+					inSsdRect = false;
+					break;
+				}
+			}
+			cv::Rect fivePointsRect;
+			if (inSsdRect == false) 
+			{
+				fivePointsRect = rectObtain();	//更新为5点外切框，默认是当前行的
+			}
+			else
+			{
+				fivePointsRect = ssdRect;	//否则保持原ssd框
+			}
+			//step 2: 框按照ssd框的标准由紧贴扩大0.2倍
+			int padX = 0.2*fivePointsRect.width;
+			int padY = 0.2*fivePointsRect.height;
+			int paddedX = fivePointsRect.x;
+			int paddedY = fivePointsRect.y;
+			int paddedXRight = fivePointsRect.x + fivePointsRect.width;
+			int paddedYBottom = fivePointsRect.y + fivePointsRect.height;
+
+			paddedX -= padX;
+			paddedY -= padY;
+			paddedXRight += padX;
+			paddedYBottom += padY;
+
+			paddedX = paddedX < 0 ? 0 : paddedX;
+			paddedY = paddedY < 0 ? 0 : paddedY;
+			paddedXRight = paddedXRight > imgWidth ? imgWidth : paddedXRight;
+			paddedYBottom = paddedYBottom > imgHeight ? imgHeight : paddedYBottom;
+
+			fivePointsRect = { paddedX, paddedY ,paddedXRight - paddedX, paddedYBottom - paddedY };
+			return fivePointsRect;
+		}
+
+		//// function13: 判断一个框是否包含在另一个框内
+		//bool TwoRectInclusion(cv::Rect bigRt, cv::Rect smallRt)
+		//{
+		//	bool bInclude = false;
+		//	if (0 == bigRt.width || 0 == bigRt.height || 0 == smallRt.width || 0 == smallRt.height)
+		//	{
+		//		return bInclude;
+		//	}
+
+		//	if (smallRt.x >= bigRt.x && smallRt.y >= bigRt.y
+		//		&& smallRt.x + smallRt.width <= bigRt.x + bigRt.width
+		//		&& smallRt.y + smallRt.height <= bigRt.y + bigRt.height)
+		//	{
+		//		bInclude = true;
+		//	}
+		//	return bInclude;
+		//}
 
 		//// function 11: LongestSubDir 求最长公共子路径
 		//String^ LongestSubDir() {
@@ -1390,7 +1467,7 @@ namespace PointCheck {
 
 
 
-		//清空键执行的功能
+		     //清空键执行的功能
 	private: System::Void button1_Click(System::Object^  sender, System::EventArgs^  e) {
 		OrderIndicate = 0;	//复位顺序预检结果
 		button6_Click(sender, e);	//模拟点击保存图片按钮
@@ -1485,7 +1562,7 @@ namespace PointCheck {
 				item1->SubItems->Add(DefaultColor);	// 默认蓝色
 				item1->SubItems->Add(DefaultType);	// 默认单层
 			}
-			if (Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')->Length == 3) {			//如果存在bbox，则读进去
+			if (Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')->Length >= 3) {			//如果存在bbox，则读进去
 				item1->SubItems->Add(Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')[1]);	//添加bbox
 			}
 			else {
@@ -1521,7 +1598,7 @@ namespace PointCheck {
 						item1->SubItems->Add(DefaultColor);	// 默认蓝色
 						item1->SubItems->Add(DefaultType);	// 默认单层
 					}
-					if (Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')->Length == 3) {			//如果存在bbox，则读进去
+					if (Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')->Length >= 3) {			//如果存在bbox，则读进去
 						item1->SubItems->Add(Text->Split('\\')[L - 1]->Split('[')[0]->Split('#')[1]);	//添加bbox
 					}
 					else {
@@ -1567,6 +1644,10 @@ namespace PointCheck {
 			 //上一帧执行的功能
 	private: System::Void button3_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		if (listView1->Items[SelectedRow]->SubItems[11]->Text == "假(虚警)")
+		{
+			richTextBox10->Text = "1234567";
+		}
 		//richTextBox10 两端去空格
 		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
@@ -1661,6 +1742,10 @@ namespace PointCheck {
 			 //下一帧执行的功能
 	private: System::Void button4_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		if (listView1->Items[SelectedRow]->SubItems[11]->Text == "假(虚警)")
+		{
+			richTextBox10->Text = "1234567";
+		}
 		//richTextBox10 两端去空格
 		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
@@ -1755,6 +1840,10 @@ namespace PointCheck {
 			 //跳帧键执行的功能
 	private: System::Void button5_Click(System::Object^  sender, System::EventArgs^  e) {
 		SelectedRow_Last = SelectedRow;
+		if (listView1->Items[SelectedRow]->SubItems[11]->Text == "假(虚警)")
+		{
+			richTextBox10->Text = "1234567";
+		}
 		//richTextBox10 两端去空格
 		richTextBox10->Text = richTextBox10->Text->Replace(" ", "");
 		if (listView1->Items[SelectedRow]->SubItems[9]->Text != richTextBox10->Text || richTextBox10->Text == "1234567") {	// 如果有改动
@@ -1867,6 +1956,8 @@ namespace PointCheck {
 			}
 		}	// end of if (PicCount!=0)
 
+		//pictureBox1->Refresh();	//导出最后一张图的bbox
+
 			// 导出history.log里面记录的更改过的图片
 		if (File::Exists("D:\\PointCheck+护眼版_Log\\history.log")) {
 			// open "D:\\PointCheck+护眼版_Log\\history.log"
@@ -1879,20 +1970,26 @@ namespace PointCheck {
 					CurrentLine = tmphistory->ReadLine();
 					int Len_curr = CurrentLine->Split(' ')->Length;
 					String^ ImgPath = "";
-					for (int i = 1; i < Len_curr - 4; i++) {
+					for (int i = 1; i < Len_curr - 5; i++) {
 						ImgPath += CurrentLine->Split(' ')[i];
-						if (i != Len_curr - 4) {
+						if (i != Len_curr - 5) {
 							ImgPath += " ";
 						}
 					}
-					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 4];
+					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 5];
 					String^ NewPath = "";
 					// 都是改过的图片，即使原来有类标也忽略
-					String^ tmpLicense = CurrentLine->Split(' ')[Len_curr - 3]; // 车牌号码
-					int tmpColor = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 2]);	// 颜色标志
-					int tmpType = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 1]);	// 类别标志
-					NewPath = ImgPath->Split('[')[0] + "[" + NewKeyPoints + "]" + "_" + tmpLicense + "_" + tmpColor + "_" + tmpType
-						+ "." + ImgPath->Split(']')[1]->Split('.')[1];
+					String^ tmpLicense = CurrentLine->Split(' ')[Len_curr - 4]; // 车牌号码
+					int tmpColor = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 3]);	// 颜色标志
+					int tmpType = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 2]);	// 类别标志
+					String^ finalRect = CurrentLine->Split(' ')[Len_curr - 1];	// 车牌框
+					int dotSplitLength = ImgPath->Split(']')[1]->Split('.')->Length;
+					String^ ImgPath_directory = ImgPath->Substring(0, ImgPath->LastIndexOf('\\') + 1);
+					String^ ImgPath_imgPath = ImgPath->Substring(ImgPath->LastIndexOf('\\') + 1);
+					NewPath = ImgPath_directory +
+						ImgPath_imgPath->Split('[')[0]->Split('#')[0] + "#" + finalRect + "#" + "_"
+						+ "[" + NewKeyPoints + "]" + "_" + tmpLicense + "_" + tmpColor + "_" + tmpType
+						+ "." + ImgPath_imgPath->Split(']')[1]->Split('.')[dotSplitLength-1];
 
 
 					if (!File::Exists(NewPath)) {	//如果点的点正好一样就不存了
@@ -1944,20 +2041,28 @@ namespace PointCheck {
 					CurrentLine = tmphistoryNAN->ReadLine();
 					int Len_curr = CurrentLine->Split(' ')->Length;
 					String^ ImgPath = "";
-					for (int i = 1; i < Len_curr - 4; i++) {
+					for (int i = 1; i < Len_curr - 5; i++) {
 						ImgPath += CurrentLine->Split(' ')[i];
-						if (i != Len_curr - 4) {
+						if (i != Len_curr - 5) {
 							ImgPath += " ";
 						}
 					}
-					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 4];
+					String^ NewKeyPoints = CurrentLine->Split(' ')[Len_curr - 5];
 					String^ NewPath = "";
 					// 都是改过的图片，即使原来有类标也忽略
-					String^ tmpLicense = CurrentLine->Split(' ')[Len_curr - 3]; // 车牌号码
-					int tmpColor = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 2]);	// 颜色标志
-					int tmpType = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 1]);	// 类别标志
-					NewPath = ImgPath->Split('[')[0] + "[" + NewKeyPoints + "]" + "_" + tmpLicense + "_" + tmpColor + "_" + tmpType
-						+ "." + ImgPath->Split(']')[1]->Split('.')[1];
+					String^ tmpLicense = CurrentLine->Split(' ')[Len_curr - 4]; // 车牌号码
+					int tmpColor = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 3]);	// 颜色标志
+					int tmpType = ColorTypeConvert(CurrentLine->Split(' ')[Len_curr - 2]);	// 类别标志
+					String^ finalRectNAN = CurrentLine->Split(' ')[Len_curr - 1];	// 车牌框
+					int dotSplitLengthNAN = ImgPath->Split(']')[1]->Split('.')->Length;
+					String^ ImgPath_directoryNAN = ImgPath->Substring(0, ImgPath->LastIndexOf('\\') + 1);
+					String^ ImgPath_imgPathNAN = ImgPath->Substring(ImgPath->LastIndexOf('\\') + 1);
+					//NewPath = ImgPath->Split('[')[0] + "[" + NewKeyPoints + "]" + "_" + tmpLicense + "_" + tmpColor + "_" + tmpType
+					//	+ "." + ImgPath->Split(']')[1]->Split('.')[dotSplitLengthNAN-1];
+					NewPath = ImgPath_directoryNAN +
+						ImgPath_imgPathNAN->Split('[')[0]->Split('#')[0] + "#" + finalRectNAN + "#" + "_"
+						+ "[" + NewKeyPoints + "]" + "_" + tmpLicense + "_" + tmpColor + "_" + tmpType
+						+ "." + ImgPath_imgPathNAN->Split(']')[1]->Split('.')[dotSplitLengthNAN - 1];
 
 
 					if (!File::Exists(NewPath) || tmpLicense == "1234567") {	//如果点的点正好一样就不存了
@@ -2154,84 +2259,184 @@ namespace PointCheck {
 			}
 
 
-			//车牌颜色和字符的"信息框"(即底色为车牌颜色，上面有车牌号)bitmap重绘部分
-			//step1:根据原车牌rect得到缩放过后的rect
-			infoRectResize rectVehLPinfo;
-			rectVehLPinfo.dResizeFactorXY = 2;
-
-			//"信息框":车牌数字和颜色
-			rectVehLPinfo.rectVehLpNumColor.x = 0;
-			rectVehLPinfo.rectVehLpNumColor.y = 0;
-			rectVehLPinfo.rectVehLpNumColor.width = rectPicBox.width * rectVehLPinfo.dResizeFactorXY;
-			rectVehLPinfo.rectVehLpNumColor.height = rectPicBox.height * rectVehLPinfo.dResizeFactorXY;
-
-			printf("picturebox1->height:  %d    rectPicBox.y: %d  rectPicBox.height: %d   rectVehLpNumColor.height: %d \n", 
-				pictureBox1->Height, rectPicBox.y, rectPicBox.height, rectVehLPinfo.rectVehLpNumColor.height);
-
-			//自适应"信息框"的位置
-			if(rectPicBox.y + rectPicBox.height /2<=pictureBox1->Height/2)	//如果车牌位置偏上
+			//如果有5个点
+			if (LocNum[SelectedRow] == 5) 
 			{
-				printf("上\n");
-				rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y + rectPicBox.height + 0.2* rectPicBox.height ;	//显示在车牌下方（0.2*显示的车牌高度）处
-				rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
-			}
-			else	//车牌位置偏下
-			{
-				printf("下\n");
-				rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y - rectVehLPinfo.rectVehLpNumColor.height - 0.2* rectPicBox.height;	//显示在车牌上方（0.2*显示的车牌高度）处
-				rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
-			}
-			
-			SolidBrush^ infoBrush;
-			SolidBrush ^ numBrush = gcnew SolidBrush(Color::Red);
-			String^ colorString = listView1->Items[SelectedRow]->SubItems[10]->Text;
-			if (colorString == "未知" || colorString == "") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Gray));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::White);	// Create a new pen 
-			}
-			else if (colorString == "白") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::White));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::Black);	// Create a new pen 
-			}
-			else if (colorString == "黑") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Black));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::Blue);	// Create a new pen 
-			}
-			else if (colorString == "蓝") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Blue));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::Yellow);	// Create a new pen 
-			}
-			else if (colorString == "黄") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Yellow));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::Green);	// Create a new pen 
-			}
-			else if (colorString == "绿") {
-				infoBrush = gcnew SolidBrush(Color::FromArgb(200,Color::Green));	// Create a new pen 
-				//numBrush = gcnew SolidBrush(Color::Gray);	// Create a new pen 
-			}
-			e->Graphics->FillRectangle(infoBrush, rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
-				rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
-			
+				//车牌颜色和字符的"信息框"(即底色为车牌颜色，上面有车牌号)bitmap重绘部分
+				//step1:根据原车牌rect得到缩放过后的rect
+				infoRectResize rectVehLPinfo;
+				String^ StrRectSD = listView1->Items[SelectedRow]->SubItems[11]->Text;
+				bool bStrRectSD = false;	//单双牌
+				bool bXu = false;	//是否虚警
+				if (listView1->Items[SelectedRow]->SubItems[11]->Text == "假(虚警)")
+				{
+					bXu = true;
+				}
+				if (StrRectSD == "单层" || StrRectSD == "假(虚警)") 
+				{
+					rectVehLPinfo.dResizeFactorXY = 2;
+				}
+				else 
+				{
+					rectVehLPinfo.dResizeFactorXY = 1.6;
+					bStrRectSD = true;
+				}
 
-			String^ numberString = listView1->Items[SelectedRow]->SubItems[9]->Text;
-			System::Drawing::Font^ arial16 = gcnew System::Drawing::Font("Arial",25);
-			System::Drawing::RectangleF rectBrush = System::Drawing::RectangleF(rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
-				rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
-			e->Graphics->DrawString(numberString, arial16, numBrush, rectBrush);
 
-			//if (listView1->Items[SelectedRow]->SubItems[10]->Text == "假(虚警)" || listView1->Items[SelectedRow]->SubItems[10]->Text == "单层")
-			//{
+				//"信息框":车牌数字和颜色
+				rectVehLPinfo.rectVehLpNumColor.x = 0;
+				rectVehLPinfo.rectVehLpNumColor.y = 0;
+				rectVehLPinfo.rectVehLpNumColor.width = rectPicBox.width * rectVehLPinfo.dResizeFactorXY;
+				rectVehLPinfo.rectVehLpNumColor.height = rectPicBox.height * rectVehLPinfo.dResizeFactorXY;
 
-			//}
-			//else 
-			//{
+				//printf("picturebox1->height:  %d    rectPicBox.y: %d  rectPicBox.height: %d   rectVehLpNumColor.height: %d \n",
+				//	pictureBox1->Height, rectPicBox.y, rectPicBox.height, rectVehLPinfo.rectVehLpNumColor.height);
 
-			//}
+				//自适应"信息框"的位置
+				if (rectPicBox.y + rectPicBox.height / 2 <= pictureBox1->Height / 2)	//如果车牌位置偏上
+				{
+					//printf("上\n");
+					rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y + rectPicBox.height + 0.2* rectPicBox.height;	//显示在车牌下方（0.2*显示的车牌高度）处
+					rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
+				}
+				else	//车牌位置偏下
+				{
+					//printf("下\n");
+					rectVehLPinfo.rectVehLpNumColor.y = rectPicBox.y - rectVehLPinfo.rectVehLpNumColor.height - 0.2* rectPicBox.height;	//显示在车牌上方（0.2*显示的车牌高度）处
+					rectVehLPinfo = infoRectAdapt(rectVehLPinfo, rectPicBox);
+				}
 
-			//for (int r = 0; r < 4; r++) 
-			//{
+				SolidBrush^ infoBrush;
+				SolidBrush ^ numBrush = gcnew SolidBrush(Color::Red);
+				String^ colorString = listView1->Items[SelectedRow]->SubItems[10]->Text;
+				if (colorString == "未知" || colorString == "") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Gray));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::White);	// Create a new pen 
+				}
+				else if (colorString == "白") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::White));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::Black);	// Create a new pen 
+				}
+				else if (colorString == "黑") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Black));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::Blue);	// Create a new pen 
+				}
+				else if (colorString == "蓝") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Blue));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::Yellow);	// Create a new pen 
+				}
+				else if (colorString == "黄") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Yellow));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::Green);	// Create a new pen 
+				}
+				else if (colorString == "绿") {
+					infoBrush = gcnew SolidBrush(Color::FromArgb(200, Color::Green));	// Create a new pen 
+																						//numBrush = gcnew SolidBrush(Color::Gray);	// Create a new pen 
+				}
+				e->Graphics->FillRectangle(infoBrush, rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
+					rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
 
-			//}
+
+				String^ numberString, ^numberString1, ^ numberString2;
+				System::Drawing::Font^ arial16 = gcnew System::Drawing::Font("Arial", 25);
+				System::Drawing::RectangleF rectBrush = System::Drawing::RectangleF(rectVehLPinfo.rectVehLpNumColor.x, rectVehLPinfo.rectVehLpNumColor.y,
+					rectVehLPinfo.rectVehLpNumColor.width, rectVehLPinfo.rectVehLpNumColor.height);
+				if (bStrRectSD == false) 
+				{
+					if (bXu) 
+					{
+						e->Graphics->DrawString("假(虚警)", arial16, numBrush, rectBrush);
+					}
+					else 
+					{
+						numberString1 = listView1->Items[SelectedRow]->SubItems[9]->Text;	//车牌字
+						e->Graphics->DrawString(numberString1, arial16, numBrush, rectBrush);
+					}
+				}
+				else 
+				{
+					numberString = listView1->Items[SelectedRow]->SubItems[9]->Text;
+					if (bXu)
+					{
+						e->Graphics->DrawString("假(虚警)", arial16, numBrush, rectBrush);
+					}
+					else if (numberString->Length > 5) 
+					{
+						numberString2 = numberString->Substring(numberString->Length - 5);
+						numberString1 = numberString->Substring(0, numberString->Length - 5);
+						e->Graphics->DrawString(numberString1, arial16, numBrush, rectBrush);
+						e->Graphics->DrawString(numberString2, arial16, numBrush, rectBrush.X, rectBrush.Y + 30);
+					}
+					else 
+					{
+						e->Graphics->DrawString(numberString, arial16, numBrush, rectBrush);
+					}
+				}
+				e->Graphics->DrawString(numberString1, arial16, numBrush, rectBrush);
+				//e->Graphics->DrawString(StrRectSD, arial16, numBrush, rectBrush.X,rectBrush.Y + 30);
+
+
+				//更新bbox
+				//if ((ChangedOrNot.size()>0) && (ChangedOrNot[SelectedRow] == 1))
+				//{
+				cv::Rect tmpFivePointsBbox;
+				String^ StrOribbox = listView1->Items[SelectedRow]->SubItems[12]->Text;
+				if (StrOribbox != "bbox")
+				{
+					cv::Rect tmpSsdBbox = { int::Parse(StrOribbox->Split(',')[0]), int::Parse(StrOribbox->Split(',')[1]),
+						int::Parse(StrOribbox->Split(',')[2]), int::Parse(StrOribbox->Split(',')[3]) };
+					tmpFivePointsBbox = ssdRectUpdate(LPLoc[SelectedRow], tmpSsdBbox, img->width, img->height);
+					StrOribbox = tmpFivePointsBbox.x.ToString() + "," + tmpFivePointsBbox.y.ToString() + ","
+						+ tmpFivePointsBbox.width.ToString() + "," + tmpFivePointsBbox.height.ToString();
+				}
+				else
+				{
+					StrOribbox = rectLpOri.x.ToString() + "," + rectLpOri.y.ToString() + ","
+						+ rectLpOri.width.ToString() + "," + rectLpOri.height.ToString();
+				}
+				listView1->Items[SelectedRow]->SubItems[12]->Text = StrOribbox;
+				//bbox更改后，ChangedOrNot更改
+				while (ChangedOrNot.size() < SelectedRow + 1) {
+					ChangedOrNot.push_back(0);	//默认0
+				}
+				ChangedOrNot[SelectedRow] = 1;
+				OutHistory();
+
+				 //如果有bbox,则显示
+				String^ Strbbox = listView1->Items[SelectedRow]->SubItems[12]->Text;
+				//printf("%s",Strbbox);
+				if (Strbbox != "bbox")
+				{
+					int tmpDrawBbox[4];
+					for (int i = 0; i < 4; i++)
+					{
+						tmpDrawBbox[i] = int::Parse(Strbbox->Split(',')[i]);
+						//printf("tmpDrawBbox[%d]%d\n", i,tmpDrawBbox[i]);
+						//std::cout << "tmpDrawBbox[0]" << tmpDrawBbox[0]<<endl;
+					}
+
+					tmpDrawBbox[0] = tmpDrawBbox[0] * resizeFactor + wdiff;
+					if (imgFull)
+					{
+						tmpDrawBbox[1] = tmpDrawBbox[1] * resizeFactor + hdiff;
+					}
+					else
+					{
+						tmpDrawBbox[1] = tmpDrawBbox[1] * resizeFactor - (double)(img->height)*resizeFactor / 2 + hdiff;
+					}
+					tmpDrawBbox[2] = tmpDrawBbox[2] * resizeFactor;
+					tmpDrawBbox[3] = tmpDrawBbox[3] * resizeFactor;
+
+
+					Pen^ RecPen = gcnew Pen(Color::Red);
+					System::Drawing::Rectangle rect = System::Drawing::Rectangle(tmpDrawBbox[0], tmpDrawBbox[1], tmpDrawBbox[2], tmpDrawBbox[3]);
+					e->Graphics->DrawRectangle(RecPen, rect);
+					//}
+
+				}
+
+			}//end of 如果有5个点
+
 
 
 			//for (int m = 0; m < LocNum[SelectedRow]; m++) {
@@ -2687,6 +2892,7 @@ namespace PointCheck {
 	private: System::Void button15_Click(System::Object^  sender, System::EventArgs^  e) {
 		listView1->Items[SelectedRow]->SubItems[11]->Text = "假(虚警)";
 		richTextBox8->Text = "假(虚警)";	// 显示类型
+		button18_Click(sender, e);	//虚警一定是1234567，设置相应车牌号
 		while (ChangedOrNot.size() < SelectedRow + 1) {
 			ChangedOrNot.push_back(0);	//默认0
 		}
@@ -2785,4 +2991,7 @@ namespace PointCheck {
 #pragma endregion
 
 	};// end of public ref class MyForm : public System::Windows::Forms::Form
+
+
+
 }// end of namespace PointCheck

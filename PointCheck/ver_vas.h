@@ -1,4 +1,3 @@
-#pragma once
 
 #ifndef _CC_VA_H_
 #define _CC_VA_H_
@@ -12,6 +11,6 @@
 
 #include <Windows.h>
 
-EAPI(bool) VerifyAuthorityVasTest();
+EAPI(bool) VerifyAuthorityVasTest(int nStartYear, int nStartMonth, int nStartDay, int nRestrictDays);
 
 #endif

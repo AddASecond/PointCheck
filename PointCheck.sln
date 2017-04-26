@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PointCheck", "PointCheck\PointCheck.vcxproj", "{253C99EF-8C51-4A3F-B368-3E5462E90BFE}"
 EndProject
@@ -15,8 +15,8 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x64.ActiveCfg = Debug|x64
 		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x64.Build.0 = Debug|x64
-		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x86.ActiveCfg = Release|Win32
-		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x86.Build.0 = Release|Win32
+		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x86.ActiveCfg = Debug|Win32
+		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Debug|x86.Build.0 = Debug|Win32
 		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Release|x64.ActiveCfg = Release|x64
 		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Release|x64.Build.0 = Release|x64
 		{253C99EF-8C51-4A3F-B368-3E5462E90BFE}.Release|x86.ActiveCfg = Release|Win32
