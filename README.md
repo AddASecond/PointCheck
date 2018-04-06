@@ -10,4 +10,4 @@ Reading image from .set list file. Recognizing 5 points from the x-y location in
 UI of this program is shown as below:
 It inclues all essential infomation and previous/next image button, also some functional buttons like “error proofing”, lower half of image(F4) and so on.
 
-![image](https://github.com/bobauditore/PointCheck/blob/master/%E6%8D%95%E8%8E%B7.JPG)
+!![image](https://github.com/bobauditore/PointCheck/blob/master/%E6%8D%95%E8%8E%B7.JPG)
