@@ -7,7 +7,7 @@ using namespace PointCheck;//使用MyForm.h中定义的命名空间
 
 int main(array<System::String^>^args) 
 {
-	if (!VerifyAuthorityVasTest(2017,4,24,365))
+	if (!VerifyAuthorityVasTest(2018,4,24,730))
 	{
 		printf("Please get your license............\n");
 		return 1;
